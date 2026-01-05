@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+html,
+body {
+  width: 400px;
+  height: 500px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Choose a different color theme? */
+@theme {
+  --color-text: #d6dee8;
+  --color-secondary-text: #929ba8;
+  --color-background: #0f121edb;
+  --color-secondary-background: #171c2e74;
+  --color-primary: #227ffa;
+  --color-secondary: #0054ca;
+  --color-accent: #9798a99e;
+  --color-box-outline: #0f121e86;
+}
