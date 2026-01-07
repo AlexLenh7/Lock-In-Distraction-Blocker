@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 export default function Settings() {
   const buttonStates = [
@@ -10,7 +10,6 @@ export default function Settings() {
   const [action, setAction] = useState<string>("Block");
   const [time, setTime] = useState({ hours: 0, minutes: 0 });
   const [active, setActive] = useState<boolean>(false);
-  const isInitialMount = useRef(true);
 
   // save the time in minutes to storage
   const saveTime = (h: number, m: number) => {
@@ -20,43 +19,43 @@ export default function Settings() {
     chrome.storage.sync.set({ maxTime: newTimeMin });
   };
 
-  // convert time from minutes to hours for display
   useEffect(() => {
+    // grab and convert time from minutes to hours for display
     chrome.storage.sync.get({ maxTime: 30 }, (data) => {
       const totalMin = data.maxTime as number;
       const hour = Math.floor(totalMin / 60);
       const min = totalMin % 60;
       setTime({ hours: hour, minutes: min });
     });
-  }, []);
 
-  // grab the button state saved once on mount
-  useEffect(() => {
+    // grab button state and update ui
     chrome.storage.sync.get({ action: "Block" }, (data) => {
       setAction(data.action as string);
     });
+
+    // grab button state on popup
+    chrome.storage.sync.get({ active: false }, (data) => {
+      setActive(data.active as boolean);
+    });
   }, []);
+
+  // helper function to save active state on change
+  const updateActive = () => {
+    const newActive = !active;
+    setActive(newActive);
+    chrome.storage.sync.set({ active: newActive });
+  };
+
+  // helper function to save action to storage on change
+  const updateAction = (newAction: string) => {
+    setAction(newAction);
+    chrome.storage.sync.set({ action: newAction });
+  };
 
   // saves action to storage on change
   useEffect(() => {
     chrome.storage.sync.set({ action });
   }, [action]);
-
-  // saves button state to storage
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false; // Mark first render as done
-      return; // Skip the save
-    }
-    chrome.storage.sync.set({ active });
-  }, [active]);
-
-  // grab the button state saved once on mount
-  useEffect(() => {
-    chrome.storage.sync.get({ active: false }, (data) => {
-      setActive(data.active as boolean);
-    });
-  }, []);
 
   return (
     // TODO: Add a choosable option between block, warn, and disable
@@ -93,7 +92,7 @@ export default function Settings() {
               className={`p-1 flex justify-center items-center col-3 cursor-pointer transition-all duration-300 ${
                 active ? "bg-primary text-text" : "text-gray-500"
               }`}
-              onClick={() => setActive(!active)}
+              onClick={() => updateActive()}
             >
               {active ? "Enabled" : "Disabled"}
             </button>
@@ -113,7 +112,7 @@ export default function Settings() {
           {buttonStates.map((b) => (
             <button
               key={b.id}
-              onClick={() => setAction(b.state)}
+              onClick={() => updateAction(b.state)}
               className={`z-10 flex justify-center items-center col-${
                 b.id
               } p-1 cursor-pointer transition-colors duration-300${
