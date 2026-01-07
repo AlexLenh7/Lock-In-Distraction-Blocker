@@ -1,10 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
-import Websites from "./pages/Websites";
+import Websites, { type Website } from "./pages/Websites";
+import { FaLock } from "react-icons/fa";
+import { FaLockOpen } from "react-icons/fa";
 
 function App() {
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [website, setWebsite] = useState<Website[]>([]);
+  const [currSite, setCurrSite] = useState<string>("");
+  const [globalSwitch, setGlobalSwitch] = useState<boolean>(true);
+
+  // Single loader to grab all data
+  useEffect(() => {
+    chrome.storage.local.get({ globalSwitch: true }, (data) => setGlobalSwitch(data.globalSwitch as boolean));
+    chrome.storage.sync.get({ website: [] }, (data) => setWebsite(data.website as Website[]));
+
+    // grab the current site on mount / when popup opens
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (activeTab?.url) {
+        try {
+          const url = new URL(activeTab.url);
+          const cleanName = url.hostname.replace(/^www\./, "");
+          setCurrSite(cleanName);
+        } catch (e) {
+          console.log("invalid URL", e);
+        }
+      }
+    });
+  }, []);
+
+  // handle global switch state
+  const handleToggleGlobal = () => {
+    const newValue = !globalSwitch;
+    setGlobalSwitch(newValue);
+    chrome.storage.local.set({ globalSwitch: newValue });
+  };
+
+  // handle website states
+  const handleUpdateWebsites = (newWebsites: Website[]) => {
+    setWebsite(newWebsites);
+    chrome.storage.sync.set({ website: newWebsites });
+  };
+
+  // add current focused Site
+  const addCurr = () => {
+    if (website.some((site) => site.text === currSite)) return;
+
+    const newWebsite: Website = { id: Date.now().toString(), text: currSite };
+    const updatedList = [newWebsite, ...website];
+
+    // Update both State (UI) and Storage (Data) at once
+    setWebsite(updatedList);
+    chrome.storage.sync.set({ website: updatedList });
+  };
 
   const navItems = [
     {
@@ -18,7 +68,7 @@ function App() {
     },
     {
       key: 2,
-      name: "Website",
+      name: "Websites",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5 mr-1">
           <path d="M5.625 3.75a2.625 2.625 0 1 0 0 5.25h12.75a2.625 2.625 0 0 0 0-5.25H5.625ZM3.75 11.25a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5H3.75ZM3 15.75a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75ZM3.75 18.75a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5H3.75Z" />
@@ -39,23 +89,24 @@ function App() {
       ),
     },
   ];
+
   const renderContent = () => {
     switch (activeTab) {
       case "Dashboard":
         return (
-          <div>
+          <div className="flex-1">
             <Dashboard />
           </div>
         );
-      case "Website":
+      case "Websites":
         return (
-          <div>
-            <Websites />
+          <div className="flex-1">
+            <Websites website={website} setWebsite={handleUpdateWebsites} />
           </div>
         );
       case "Settings":
         return (
-          <div>
+          <div className="flex-1">
             <Settings />
           </div>
         );
@@ -63,16 +114,87 @@ function App() {
         return null;
     }
   };
+
   return (
+    //TODO: Add a on/off setting below header
+    //TODO: Add current site button below header
     <div className="flex p-4 w-full h-full flex-col justify-start border items-center bg-background border-solid">
       <h1 className="text-text w-full flex justify-center text-xl">Lock In</h1>
+      {/* Add current site button */}
+      <div className="grid grid-cols-2 w-full gap-2 mt-4">
+        <div className="col-1">
+          {currSite && (
+            <button
+              className="border-2 border-text text-text p-1 w-full cursor-pointer flex hover:border-primary justify-center"
+              onClick={addCurr}
+            >
+              {website.some((site) => site.text === currSite) ? (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    className="size-4 mr-1"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+
+                  <span className="flex items-center justfiy-center">Site already added</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="flex size-4 mr-1 items-center"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M19.916 4.626a.75.75 0 0 1 .208 1.04l-9 13.5a.75.75 0 0 1-1.154.114l-6-6a.75.75 0 0 1 1.06-1.06l5.353 5.353 8.493-12.74a.75.75 0 0 1 1.04-.207Z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  <span className="flex items-center justfiy-center whitespace-nowrap">{currSite}?</span>
+                </>
+              )}
+            </button>
+          )}
+          <p className="flex justify-center text-secondary-text">Quick add</p>
+        </div>
+        <div className="col-2">
+          {/* ON/OFF BUTTON */}
+          <button
+            onClick={() => handleToggleGlobal()}
+            className={`text-text w-full flex items-center justify-center p-1 border-2 cursor-pointer transition-all duration-300 ${
+              globalSwitch
+                ? "border-green-600 hover:bg-green-600"
+                : "border-red-400 hover:bg-red-400 text-secondary-text"
+            }`}
+          >
+            {globalSwitch ? (
+              <>
+                <FaLock className="mr-1" />
+                Extension Active
+              </>
+            ) : (
+              <>
+                <FaLockOpen className="mr-1" />
+                Extension Disabled
+              </>
+            )}
+          </button>
+        </div>
+      </div>
       <nav className="w-full h-fit mt-4">
-        <ul className="grid grid-cols-3 items-start w-full rounded-lg gap-2">
+        <ul className="grid grid-cols-3 items-start w-full">
           {navItems.map((item) => (
             <li
               className={`flex justify-center items-center col-${
                 item.key
-              } cursor-pointer border-solid rounded-lg px-2 py-1 hover:bg-primary text-text transition-all duration-300 ${
+              } cursor-pointer border-solid px-2 py-1 hover:bg-primary text-text transition-all duration-300 ${
                 activeTab === item.name ? "bg-primary" : "hover:bg-primary"
               }`}
               onClick={() => setActiveTab(item.name)}
@@ -83,7 +205,7 @@ function App() {
           ))}
         </ul>
       </nav>
-      <div className="w-full h-full">{renderContent()}</div>
+      <div className="flex w-full h-full">{renderContent()}</div>
     </div>
   );
 }

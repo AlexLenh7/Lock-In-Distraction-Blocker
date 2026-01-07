@@ -19,17 +19,27 @@ body {
   display: none;
 }
 
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Hide scrollbar for IE, Edge and Firefox */
 * {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
 
+* {
+  font-family: "Lexend";
+}
+
 /* Choose a different color theme? */
 @theme {
   --color-text: #d6dee8;
   --color-secondary-text: #929ba8;
-  --color-background: #0f121edb;
+  --color-background: #0c1422;
   --color-secondary-background: #171c2e74;
   --color-primary: #227ffa;
   --color-secondary: #0054ca;
