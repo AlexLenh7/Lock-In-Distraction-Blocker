@@ -11,20 +11,12 @@ export default function Settings() {
   const [time, setTime] = useState({ hours: 0, minutes: 0 });
   const [active, setActive] = useState<boolean>(false);
 
-  // save the time in minutes to storage
-  const saveTime = (h: number, m: number) => {
-    const newTime = { hours: h, minutes: m };
-    const newTimeMin: number = newTime.minutes + newTime.hours * 60;
-    setTime(newTime);
-    chrome.storage.sync.set({ maxTime: newTimeMin });
-  };
-
   useEffect(() => {
     // grab and convert time from minutes to hours for display
     chrome.storage.sync.get({ maxTime: 30 }, (data) => {
-      const totalMin = data.maxTime as number;
-      const hour = Math.floor(totalMin / 60);
-      const min = totalMin % 60;
+      const totalSec = data.maxTime as number;
+      const hour = Math.floor(totalSec / 3600);
+      const min = Math.floor((totalSec % 3600) / 60);
       setTime({ hours: hour, minutes: min });
     });
 
@@ -38,6 +30,14 @@ export default function Settings() {
       setActive(data.active as boolean);
     });
   }, []);
+
+  // save the time in minutes to storage
+  const saveTime = (h: number, m: number) => {
+    const newTime = { hours: h, minutes: m };
+    const newTimeMin: number = newTime.hours * 3600 + newTime.minutes * 60;
+    setTime(newTime);
+    chrome.storage.sync.set({ maxTime: newTimeMin });
+  };
 
   // helper function to save active state on change
   const updateActive = () => {
@@ -58,22 +58,31 @@ export default function Settings() {
   }, [action]);
 
   return (
-    // TODO: Add a choosable option between block, warn, and disable
-    // Add maximum time allowed set by user
-    // Add a mode selector
+    // TODO: Add a mode selector
     <div>
-      <h1 className="text-text my-2">Default Block Settings</h1>
-      <div className="rounded-lg text-text p-3 bg-secondary-background">
+      <div className="rounded-lg text-text bg-secondary-background">
         <div>
-          <div className="grid grid-cols-3 w-full gap-2 border-2 justify-center">
+          <h1 className="text-text my-2">Default Block Settings</h1>
+          <div className="grid grid-cols-3 w-full border-2 justify-center">
             {/* Hours Column */}
             <div className="grid grid-cols-2 col-1 w-full">
               <input
                 className="text-center flex justify-center w-full focus:bg-transparent focus:outline-none focus:ring-0 focus:shadow-none"
                 type="number"
-                placeholder="hour"
-                value={time.hours}
-                onChange={(e) => saveTime(parseInt(e.target.value) || 0, time.minutes)}
+                placeholder="0"
+                value={time.hours || ""}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  // If the user clears the field, treat it as 0
+                  const finalVal = isNaN(val) ? 0 : val;
+
+                  if (finalVal > 24) {
+                    saveTime(0, time.minutes); // Reset to 0 (and show placeholder) if invalid
+                  } else {
+                    saveTime(finalVal, time.minutes);
+                  }
+                }}
+                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
               />
               <label className="flex items-center">{time.hours > 1 ? "hours" : "hour"}</label>
             </div>
@@ -82,9 +91,19 @@ export default function Settings() {
               <input
                 className="text-center flex justify-center w-full focus:bg-transparent focus:outline-none focus:ring-0 focus:shadow-none"
                 type="number"
-                placeholder="min"
-                value={time.minutes}
-                onChange={(e) => saveTime(time.hours, parseInt(e.target.value) || 0)}
+                placeholder="0"
+                value={time.minutes || ""}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  const finalVal = isNaN(val) ? 0 : val;
+
+                  if (finalVal >= 60) {
+                    saveTime(time.hours, 0); // Reset to 0 (and show placeholder) if invalid
+                  } else {
+                    saveTime(time.hours, finalVal);
+                  }
+                }}
+                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
               />
               <span className="flex items-center">min</span>
             </div>
@@ -104,7 +123,7 @@ export default function Settings() {
           <div
             className="absolute h-full transition-all duration-300 ease-in-out"
             style={{
-              width: "96px",
+              width: "103.34px",
               transform: `translateX(${buttonStates.findIndex((b) => b.state === action) * 100}%)`,
               backgroundColor: buttonStates.find((b) => b.state === action)?.color || "#818181",
             }}

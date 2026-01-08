@@ -78,7 +78,7 @@ export default function Websites({ website, setWebsite }: Props) {
             <input
               type="text"
               placeholder="Enter a website (e.g. youtube.com)"
-              className="w-full p-2 focus:outline-none focus:bg-primary hover:bg-primary transition-all duration-300"
+              className="w-full p-2 focus:outline-none focus:bg-primary hover:bg-secondary transition-all duration-300"
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addWebsite()}
@@ -97,7 +97,7 @@ export default function Websites({ website, setWebsite }: Props) {
               type="text"
               value={site.text}
               onChange={(e) => updateRemove(site.id, e.target.value)}
-              className="w-full p-2 bg-transparent text-text focus:bg-primary focus:outline-none hover:bg-primary transition-all duration-300"
+              className="w-full p-2 bg-transparent text-text focus:bg-primary focus:outline-none hover:bg-secondary transition-all duration-300"
             />
           ))}
         </div>
