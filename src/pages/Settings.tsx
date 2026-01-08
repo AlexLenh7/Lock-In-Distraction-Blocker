@@ -12,7 +12,7 @@ export default function Settings() {
   const [active, setActive] = useState<boolean>(false);
 
   useEffect(() => {
-    // grab and convert time from minutes to hours for display
+    // grab and convert time from seconds to hours and minutes for display
     chrome.storage.sync.get({ maxTime: 30 }, (data) => {
       const totalSec = data.maxTime as number;
       const hour = Math.floor(totalSec / 3600);
@@ -31,12 +31,12 @@ export default function Settings() {
     });
   }, []);
 
-  // save the time in minutes to storage
+  // save the time in seconds to storage
   const saveTime = (h: number, m: number) => {
     const newTime = { hours: h, minutes: m };
-    const newTimeMin: number = newTime.hours * 3600 + newTime.minutes * 60;
+    const newTimeSec: number = newTime.hours * 3600 + newTime.minutes * 60;
     setTime(newTime);
-    chrome.storage.sync.set({ maxTime: newTimeMin });
+    chrome.storage.sync.set({ maxTime: newTimeSec });
   };
 
   // helper function to save active state on change

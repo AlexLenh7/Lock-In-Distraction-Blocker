@@ -14,7 +14,7 @@ function App() {
 
   // Single loader to grab all data
   useEffect(() => {
-    chrome.storage.local.get({ globalSwitch: true }, (data) => setGlobalSwitch(data.globalSwitch as boolean));
+    chrome.storage.sync.get({ globalSwitch: true }, (data) => setGlobalSwitch(data.globalSwitch as boolean));
     chrome.storage.sync.get({ website: [] }, (data) => setWebsite(data.website as Website[]));
 
     // grab the current site on mount / when popup opens
@@ -36,7 +36,7 @@ function App() {
   const handleToggleGlobal = () => {
     const newValue = !globalSwitch;
     setGlobalSwitch(newValue);
-    chrome.storage.local.set({ globalSwitch: newValue });
+    chrome.storage.sync.set({ globalSwitch: newValue });
   };
 
   // handle website states
