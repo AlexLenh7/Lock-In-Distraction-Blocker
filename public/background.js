@@ -1,7 +1,7 @@
 // when alarm goes off respond to it
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   // action for when alarm goes off
-  console.log("[Alarm] Heartbeat check...");
+  console.log("[Alarm] 30 seconds passed...");
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const currTab = tabs[0];
   if (!currTab) return;
@@ -54,19 +54,44 @@ async function handleTab(tabId, timeClicked) {
 async function handleTotalTime(currStartTime, storedStartTime) {
   const { maxTime } = await chrome.storage.sync.get({ maxTime: 1800 }); // grab the most updated time
   const timeSeconds = (currStartTime - storedStartTime) / 1000;
-  const updateTime = maxTime - timeSeconds; // grab the time in seconds spent
+  let updateTime = maxTime - timeSeconds; // grab the time in seconds spent
 
   console.log(`[Timer] Subtraction: ${timeSeconds.toFixed(2)}s. Remaining: ${updateTime.toFixed(2)}s`);
 
   // check if update time is negative and redirect to content script
   if (updateTime <= 0) {
+    updateTime = 0;
     console.log("[Action] Time limit reached. Redirecting...");
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
-      chrome.tabs.update(tab.id, { url: "https://www.google.com" });
+      // let redirect handle updating based on settings
+      await redirect(tab.id);
     }
   }
   await chrome.storage.sync.set({ maxTime: updateTime });
+}
+
+// helper function redirect based off block state
+// since we are calling inside handle time that means timer is active so we skip accounting that
+async function redirect(tabId) {
+  const { action } = await chrome.storage.sync.get({ action: "Block" });
+
+  // if action is block then redirect
+  if (action === "Block") {
+    console.log("Setting is Block, Redirect Blocking site");
+    return chrome.tabs.update(tabId, { url: "https://www.google.com" });
+  }
+
+  // if timer is disabled but action isn't then do action
+  if (action === "Disable") {
+    console.log("Setting is Disable, do nothing");
+    return;
+  }
+
+  if (action === "Warn") {
+    console.log("Setting is Warn, give warn notification");
+    return;
+  }
 }
 
 // helper function checks if website is blocked
@@ -93,22 +118,28 @@ async function syncSession(tabId, reason) {
 
   // grab the stored site and time if there is one
   const { currentSite, startTime } = await chrome.storage.local.get(["currentSite", "startTime"]);
+  // grab the state of timer
+  const { active, maxTime } = await chrome.storage.sync.get({ active: false, maxTime: 1800 });
 
+  // check if currentsite and startTime exists and timer is enabled
   if (currentSite && startTime) {
     console.log(`[State] Closing session for tab: ${currentSite}`);
-
     // make a check to see if tab has changed and update the time
     // if current is different than stored then subtract the time
     await handleTotalTime(timeClicked, startTime);
     await chrome.storage.local.remove(["currentSite", "startTime"]);
   }
+
   // check if new site is blocked if not then store it
   // should not store non blocked sites
   if (await checkBlock(tabId)) {
-    console.log(`[State] Opening new session for blocked tab: ${tabId}`);
-    handleTab(tabId, timeClicked);
-  } else {
-    console.log(`[State] Tab ${tabId} is not on the block list.`);
+    if (active && maxTime > 0) {
+      console.log(`[State] Opening new session for blocked tab: ${tabId}`);
+      handleTab(tabId, timeClicked);
+    } else {
+      console.log(`timer is disabled redirecting...`);
+      redirect(tabId);
+    }
   }
 }
 
@@ -131,7 +162,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
       await syncSession(tab.id, "Settings Toggle");
-    } else if (changes.globalSwitch?.newValue === false) {
+    } else if (changes.globalSwitch?.newValue === false || changes.active?.newValue === false) {
       const { startTime } = await chrome.storage.local.get("startTime");
       if (startTime) {
         await handleTotalTime(Date.now(), startTime);
