@@ -18,31 +18,21 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("alarm", {
     periodInMinutes: 0.5,
   });
+  updateContentScript();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  updateContentScript();
 });
 
 async function handleTab(tabId, timeClicked, tabUrl) {
   // grab all instances of data from storage when called
-  const data = await chrome.storage.sync.get({
-    globalSwitch: true,
-    website: [],
-    maxTime: 1800,
-    active: false,
-    action: "Block",
-  });
-  const { globalSwitch, website, maxTime, active, action } = data;
-
-  if (!globalSwitch) return; // early check if global switch is on or off
-
-  if (!active) {
-    // check if timer is activated if not then skip to content script
-    // inject the content script based off action
-    return;
-  }
+  const { maxTime } = await chrome.storage.sync.get(["maxTime"]);
 
   try {
     if (maxTime > 0) {
       // store the initial time clicked and current website
-      chrome.storage.local.set({ startTime: timeClicked, currentSite: tabId, lastUrl: tabUrl });
+      chrome.storage.local.set({ startTime: timeClicked, currentSite: tabId, lastUrl: tabUrl, showAction: false });
     }
   } catch (error) {
     console.log(error);
@@ -60,43 +50,13 @@ async function handleTotalTime(currStartTime, storedStartTime) {
   // check if update time is negative and redirect to content script
   if (updateTime <= 0) {
     updateTime = 0;
-    console.log("[Action] Time limit reached. Redirecting...");
+    console.log("[Action] Time limit reached.");
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
-      await redirect(tab.id);
+      await chrome.storage.local.set({ showAction: true });
     }
   }
   await chrome.storage.sync.set({ maxTime: updateTime });
-}
-
-// helper function redirect based off block state
-async function redirect(tabId) {
-  const data = await chrome.storage.sync.get(["action", "active", "globalSwitch"]);
-
-  // prevent redirect
-  if (data.action === undefined || data.active === undefined) {
-    console.log("[Guard] Storage not ready, skipping enforcement.");
-    return;
-  }
-
-  const action = data.action;
-
-  // if action is block then redirect
-  if (action === "Block") {
-    console.log("Setting is Block, Redirect Blocking site");
-    return chrome.tabs.update(tabId, { url: "https://www.google.com" });
-  }
-
-  // if timer is disabled but action isn't then do action
-  if (action === "Disable") {
-    console.log("Setting is Disable, do nothing");
-    return;
-  }
-
-  if (action === "Warn") {
-    console.log("Setting is Warn, give warn notification");
-    return;
-  }
 }
 
 // helper function checks if website is blocked
@@ -121,24 +81,14 @@ async function syncSession(tabId, tabUrl, reason) {
   const timeClicked = Date.now();
 
   // grab user settings
-  const { globalSwitch, active } = await chrome.storage.sync.get([
-    "globalSwitch",
-    "active",
-    "currentSite",
-    "startTime",
-  ]);
+  const { globalSwitch, active } = await chrome.storage.sync.get(["globalSwitch", "active"]);
 
   // grab current site and start time
   const { currentSite, startTime, lastUrl } = await chrome.storage.local.get(["currentSite", "startTime", "lastUrl"]);
-
   const { maxTime } = await chrome.storage.sync.get({ maxTime: 1800 });
 
-  if (globalSwitch === undefined) return;
-
-  if (active === undefined) return;
-
   // If the extension is OFF, stop everything immediately.
-  if (globalSwitch === false) {
+  if (globalSwitch === false || globalSwitch === undefined || active === undefined) {
     console.log("[Guard] Extension is Disabled. Allowing all traffic.");
     return;
   }
@@ -150,27 +100,68 @@ async function syncSession(tabId, tabUrl, reason) {
   if (currentSite && startTime) {
     console.log(`[Timer] Committing time for previous path: ${lastUrl}`);
     // make a check to see if tab has changed and update the time
-    // if current is different than stored then subtract the time
     await handleTotalTime(timeClicked, startTime);
     await chrome.storage.local.remove(["currentSite", "startTime", "lastUrl"]);
   }
 
-  // check if new site is blocked if not then store it
-  // should not store non blocked sites
+  // if site is blocked
   if (await checkBlock(tabId)) {
+    // if timer is active with time
     if (active && maxTime > 0) {
       console.log(`[State] Opening new session for blocked tab: ${tabId}`);
-      await handleTab(tabId, timeClicked, tabUrl);
+      await handleTab(tabId, timeClicked, tabUrl); // handle tab info do not show action
     } else {
       console.log(`timer is disabled redirecting...`);
-      await redirect(tabId);
+      // otherwise assume no timer so activate action
+      await chrome.storage.local.set({ showAction: true });
     }
+  } else {
+    console.log(`Site is not blocked clearing show action`);
+    await chrome.storage.local.set({ showAction: false });
+  }
+}
+
+// updates the content scripts with blocked sites as matches
+async function updateContentScript() {
+  const { website } = await chrome.storage.sync.get({ website: [] });
+
+  const patterns = website.map((site) => {
+    const domain = site.text.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    return `*://*.${domain}/*`;
+  });
+
+  try {
+    // check for old scripts if they exists
+    const oldScripts = await chrome.scripting.getRegisteredContentScripts();
+    if (oldScripts.some((script) => script.id === "blockedSites")) {
+      await chrome.scripting.unregisterContentScripts({ ids: ["blockedSites"] });
+      console.log("content script unregistered");
+    }
+
+    // register updated scripts for each website
+    if (patterns.length > 0) {
+      await chrome.scripting.registerContentScripts([
+        {
+          id: "blockedSites",
+          js: ["src/content.tsx"],
+          matches: patterns,
+          runAt: "document_start",
+        },
+      ]);
+      console.log("Content Script Registered for:", patterns);
+    }
+  } catch (error) {
+    console.log(error);
+    console.error("Registration Failed:", error);
   }
 }
 
 // use chrome.tabs.onActivated to listen for tab switches
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  await syncSession(activeInfo.tabId, activeInfo.tabId.url, "Tab Switch");
+  const tab = await chrome.tabs.get(activeInfo.tabId);
+  if (tab.url) {
+    await syncSession(activeInfo.tabId, tab.url, "Tab Switch");
+  }
 });
 
 // Checks if user doesn't switch tabs but updates current tab
@@ -187,19 +178,23 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
   console.log("[Settings] Change detected:", Object.keys(changes));
 
   // handles timer and global switches to stop the clock immediately
-  const globalOff = changes.globalSwitch?.newValue === false;
-  const timerOff = changes.active?.newValue === false;
-
-  console.log("global", globalOff);
-  console.log("timer", timerOff);
+  const globalOff = changes.globalSwitch && changes.globalSwitch.newValue === false;
+  const timerOff = changes.active && changes.active.newValue === false;
 
   if (globalOff || timerOff) {
     console.log("[Cleanup] User disabled extension/timer. Stopping session.");
     const { startTime } = await chrome.storage.local.get("startTime");
+    await chrome.storage.local.set({ showAction: false });
+    // if start time exists then handle remaining time left
     if (startTime) {
       await handleTotalTime(Date.now(), startTime);
       await chrome.storage.local.remove(["currentSite", "startTime"]);
     }
+  }
+
+  // if website list changes in storage
+  if (changes.website) {
+    updateContentScript();
   }
 
   // evaluate the current tab based on new settings regardless
