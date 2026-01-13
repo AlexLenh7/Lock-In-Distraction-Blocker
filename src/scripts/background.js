@@ -192,6 +192,24 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
   // if website list changes in storage
   if (changes.website) {
     updateContentScript();
+
+    const oldList = changes.website.oldValue || [];
+    const newList = changes.website.newValue || [];
+
+    // remove blocked site time if block list changes
+    const removeSites = oldList.filter((oldSite) => !newList.some((newSite) => newSite.text === oldSite.text));
+    console.log("Found old site", removeSites);
+    if (removeSites.length > 0) {
+      const { totalWebsiteTime = {} } = await chrome.storage.local.get("totalWebsiteTime");
+
+      removeSites.forEach((site) => {
+        if (totalWebsiteTime[site.text]) {
+          console.log("Removing time for: ", totalWebsiteTime[site.text]);
+          delete totalWebsiteTime[site.text];
+        }
+      });
+      await chrome.storage.local.set({ totalWebsiteTime });
+    }
   }
 
   // evaluate the current tab based on new settings regardless
