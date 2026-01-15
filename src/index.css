@@ -2,8 +2,8 @@
 
 html,
 body {
-  width: 350px;
-  height: 500px;
+  width: 400px;
+  height: 600px;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -34,16 +34,24 @@ input::-webkit-inner-spin-button {
 
 /* Choose a different color theme? */
 @theme {
-  --color-text: #d6dee8;
+  --color-text: #e5ddd9;
   --color-secondary-text: #929ba8;
   --color-background: #0c1422;
   --color-secondary-background: #171c2e74;
-  --color-primary: #227ffa;
   --color-secondary: #034d9b;
   --color-accent: #9798a99e;
   --color-box-outline: #0f121e86;
   --color-block: #b91717;
   --color-warn: #f49f38;
+}
+
+:root {
+  --theme-hue: 214;
+  --color-primary: hsl(var(--theme-hue) 100% 55%);
+  --color-primary-light: hsl(var(--theme-hue) 100% 75%);
+  --color-primary-dark: hsl(var(--theme-hue) 100% 30%);
+  --color-primary-background: hsla(var(--theme-hue) 45% 7%);
+  --color-primary-text: hsla(var(--theme-hue) 18% 86%);
 }
 
 @keyframes slideDown {

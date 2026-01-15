@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Block from "./Block";
 import Warn from "./Warn";
+import { type Website } from "../pages/Websites";
 
 export default function OverlayManager() {
   const [isAction, setisAction] = useState<boolean>(false);
@@ -9,7 +10,12 @@ export default function OverlayManager() {
 
   useEffect(() => {
     const checkStatus = async () => {
-      const { active, action, globalSwitch } = await chrome.storage.sync.get(["active", "action", "globalSwitch"]);
+      const {
+        active,
+        action,
+        globalSwitch,
+        website = [],
+      } = await chrome.storage.sync.get(["active", "action", "globalSwitch", "website"]);
       const { showAction } = await chrome.storage.local.get(["showAction"]);
 
       if (action === undefined || active === undefined) {
@@ -17,27 +23,18 @@ export default function OverlayManager() {
         return;
       }
 
-      const shouldShow = showAction as boolean;
-      const currentAction = action as string;
+      const currentHostname = window.location.hostname.replace(/^www\./, "");
+      const isSiteBlocked = (website as Website[]).some((site) => site.text === currentHostname);
+
+      const shouldShow = (showAction as boolean) && isSiteBlocked;
 
       setisAction(shouldShow);
-      setLocalAction(currentAction);
+      setLocalAction(action as string);
 
       // another check for global switch
       if (globalSwitch === false) {
         setisAction(false);
         return;
-      }
-
-      if (isAction) {
-        // if action is block then redirect
-        if (localAction === "Block") {
-          console.log("Setting is Block, Redirect Blocking site");
-        } else if (localAction === "Warn") {
-          console.log("Setting is Warn, give warn notification");
-        } else if (localAction === "Disable") {
-          console.log("Setting is Disable, do nothing");
-        }
       }
     };
 
@@ -46,29 +43,17 @@ export default function OverlayManager() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleStorageChange = (changes: any, area: string) => {
       if (area === "sync" || area === "local") {
-        if (changes.showAction || changes.active) {
+        if (changes.showAction || changes.active || changes.website || changes.globalSwitch) {
           checkStatus();
         }
       }
     };
 
     chrome.storage.onChanged.addListener(handleStorageChange);
-
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
-      // Restore scrolling on cleanup
-      if (document.body) {
-        document.body.style.overflow = "auto";
-      }
-    };
   }, []);
 
   const handleClose = () => {
     setisAction(false);
-    // Restore scrolling when overlay is closed
-    if (document.body && localAction === "Block") {
-      document.body.style.overflow = "auto";
-    }
   };
 
   if (!isAction || !localAction) return null;

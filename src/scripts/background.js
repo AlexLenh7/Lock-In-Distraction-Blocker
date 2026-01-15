@@ -3,6 +3,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   // action for when alarm goes off
   try {
     console.log("[Alarm] 30 seconds passed...");
+    await checkDay();
     const [currTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (!currTab) return;
 
@@ -19,7 +20,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 // create the alarm fires every minute
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   try {
     chrome.alarms.create("alarm", {
       periodInMinutes: 0.5,
@@ -31,13 +32,69 @@ chrome.runtime.onInstalled.addListener(() => {
   }
 });
 
-chrome.runtime.onStartup.addListener(() => {
+chrome.runtime.onStartup.addListener(async () => {
   try {
     updateContentScript();
+    checkDay();
   } catch (error) {
     console.error("[onStartup Error]:", error);
   }
 });
+
+// helper function checks for day to store times
+async function checkDay() {
+  console.log("CheckDay running...");
+  try {
+    const {
+      storeBlockDay = {},
+      storeGlobalDay = {},
+      globalWebsiteTime = {},
+      totalWebsiteTime = {},
+      currentDay,
+    } = await chrome.storage.local.get([
+      "globalWebsiteTime",
+      "totalWebsiteTime",
+      "currentDay",
+      "storeGlobalDay",
+      "storeBlockDay",
+    ]);
+
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dayName = days[currentDay];
+    const today = new Date().getDay();
+
+    // compare numbers if we are on a different day before updating
+    if (currentDay === undefined) {
+      console.log("[Setup] First run detected. Initializing currentDay.");
+      await chrome.storage.local.set({ currentDay: today });
+      return;
+    }
+
+    if (today !== currentDay) {
+      storeBlockDay[dayName] = totalWebsiteTime;
+      storeGlobalDay[dayName] = globalWebsiteTime;
+
+      let counter = (currentDay + 1) % 7;
+
+      // handle gaps in between days
+      while (counter !== today) {
+        const gapDayName = days[counter];
+        storeBlockDay[gapDayName] = null;
+        storeGlobalDay[gapDayName] = null;
+        counter = (counter + 1) % 7;
+      }
+      // store the all times into that day and update date
+      // currentDay is stored as a number
+      await chrome.storage.local.set({ storeBlockDay, storeGlobalDay, currentDay: today });
+      console.log("CurrDay Blocked Times:", storeBlockDay);
+      console.log("CurrDay Global Times:", storeGlobalDay);
+      // reset times for the new day
+      await cleanupOldStorageData();
+    }
+  } catch (error) {
+    console.error("[checkDay Error]:", error);
+  }
+}
 
 // helper function checks if website is blocked
 async function checkBlock(tabUrl) {
@@ -62,6 +119,9 @@ async function commitTime(now, start, url) {
   try {
     const delta = (now - start) / 1000;
     if (delta <= 0 || isNaN(delta)) return;
+
+    const currDay = new Date().getDay();
+    await chrome.storage.local.set({ currentDay: currDay });
 
     const domain = new URL(url).hostname.replace(/^www\./, "");
 
@@ -100,6 +160,7 @@ async function commitTime(now, start, url) {
 async function syncSession(tabUrl, reason) {
   try {
     console.log(`[Event] Triggered by: ${reason}`);
+    await checkDay();
     const now = Date.now();
 
     // grab user settings
@@ -121,7 +182,6 @@ async function syncSession(tabUrl, reason) {
 
     // tracks all valid sites
     if (tabUrl && !tabUrl.startsWith("chrome://") && !tabUrl.startsWith("chrome-extension://")) {
-      const isBlocked = await checkBlock(tabUrl);
       await chrome.storage.local.set({
         startTime: now,
         currentSite: tabUrl,
@@ -258,6 +318,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 // updates timer when user closes tab
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   try {
+    await checkDay();
     const { currentSite, startTime } = await chrome.storage.local.get(["currentSite", "startTime"]);
 
     if (currentSite && startTime) {
