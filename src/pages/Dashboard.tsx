@@ -143,7 +143,7 @@ export default function Dashboard() {
     return (
       <div className="w-full h-full flex justify-start mt-4 flex-col">
         <button
-          className="text-text flex w-full justify-center items-center cursor-pointer p-1 border-2 border-primary-dark hover:border-primary hover:bg-primary-dark transition-all duration-300"
+          className="text-text animate-fade-in flex w-full justify-center items-center cursor-pointer p-1 border-2 border-primary-dark hover:border-primary hover:bg-primary-dark transition-all duration-300"
           onClick={() => setShowInsights(false)}
         >
           <IoArrowBack className="size-4 mr-1" /> Back to Dashboard
@@ -222,7 +222,7 @@ export default function Dashboard() {
                   className="z-10 relative group text-secondary text-[10px] cursor-help whitespace-nowrap pointer-events-auto"
                 >
                   {currDay !== today ? `${currDay}` : "Today"}'s Usage
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
+                  <div className="absolute left-1/2 -translate-x-1/2 leading-tight top-full mt-1 p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
                     Sites with 1 minute or less will not displayed but are still counted
                   </div>
                 </span>
@@ -282,7 +282,7 @@ export default function Dashboard() {
               className="z-999 animate-fade-up animate-stagger text-sub-text group relative cursor-help"
             >
               Lock In Score
-              <div className="absolute left-1/2 -translate-x-1/2 -translate-y-3 top-full p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
+              <div className="absolute left-1/2 leading-tight -translate-x-1/2 -translate-y-3.5 top-full p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
                 Higher is better. Stay off blocked websites to increase score!
               </div>
             </div>
@@ -300,7 +300,7 @@ export default function Dashboard() {
               className="animate-fade-up animate-stagger z-999 text-sub-text group relative cursor-help"
             >
               Daily Streak
-              <div className="absolute left-1/2 -translate-x-1/2 -translate-y-3 top-full p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
+              <div className="absolute left-1/2 leading-tight -translate-x-1/2 -translate-y-3.5 top-full p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
                 Keep your score above 80 to maintain your streak!
               </div>
             </div>

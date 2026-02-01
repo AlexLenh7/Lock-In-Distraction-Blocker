@@ -42,11 +42,11 @@ function App() {
   const themes = [
     { id: 1, theme: "default-dark", name: "Dark" },
     { id: 2, theme: "default-light", name: "Light" },
-    { id: 3, theme: "neo-tokyo", name: "Tokyo" },
-    { id: 4, theme: "aura", name: "Aura" },
-    { id: 5, theme: "rose", name: "Rose" },
-    { id: 6, theme: "mono", name: "Mono" },
-    { id: 7, theme: "jade", name: "Jade" },
+    { id: 3, theme: "synth", name: "Synth" },
+    { id: 4, theme: "sunset", name: "Sunset" },
+    { id: 5, theme: "lumen", name: "Lumen" },
+    { id: 6, theme: "candy", name: "Candy" },
+    { id: 7, theme: "mono", name: "Mono" },
   ];
 
   // grab the current site on mount / when popup opens
@@ -198,7 +198,7 @@ function App() {
       className="flex p-4 w-full h-full flex-col justify-start border-2 border-text items-center bg-bg border-solid outline-none"
     >
       <div className="relative w-full justify-center items-center flex flex-col">
-        <h1 className="text-text w-full flex justify-center items-center text-2xl font-bold tracking-widest z-10 leading-none mb-1">
+        <h1 className="text-text w-full flex justify-center items-center text-2xl font-extrabold tracking-widest z-10 leading-none mb-1">
           <Typewriter
             onInit={(typewriter) => {
               typewriter.typeString("LOCK IN").pauseFor(1000).start();
@@ -214,15 +214,19 @@ function App() {
         </h1> */}
         <div>
           <p className="text-sub-text w-full flex items-center justify-center mb-2 text-xs tracking-wide">
-            <Typewriter
-              onInit={(typewriter) => {
-                typewriter.typeString(`"${quote}"`).pauseFor(1000).start();
-              }}
-              options={{
-                skipAddStyles: true,
-                cursor: `.`,
-              }}
-            />
+            <>
+              "
+              <Typewriter
+                onInit={(typewriter) => {
+                  typewriter.typeString(`${quote}`).pauseFor(1000).start();
+                }}
+                options={{
+                  skipAddStyles: true,
+                  cursor: `.`,
+                }}
+              />
+              "
+            </>
           </p>
         </div>
       </div>
@@ -311,7 +315,7 @@ function App() {
               style={{ "--delay": `${item.key * 50}ms` } as React.CSSProperties}
               className={`flex justify-center items-center col-${
                 item.key
-              } cursor-pointer animate-fade-up animate-stagger border-solid px-2 py-1 hover:bg-primary text-text transition-all duration-300 ${
+              } cursor-pointer animate-fade-up animate-stagger border-solid px-2 py-1 hover:bg-primary text-text transition-all duration-300 font-semibold uppercase tracking-wide ${
                 activeTab === item.name ? "bg-primary" : "hover:bg-primary-dark"
               }`}
               onClick={() => setActiveTab(item.name)}

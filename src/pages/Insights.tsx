@@ -2,10 +2,12 @@ import { TbFocus2 } from "react-icons/tb";
 import { ImEyeBlocked } from "react-icons/im";
 import { ImTrophy } from "react-icons/im";
 import { useEffect, useState } from "react";
-import { formatTimeDifference, formatTotalTime } from "../utils/Helpers";
+import { formatTotalTime } from "../utils/Helpers";
 import { MdToday } from "react-icons/md";
 import { IoMdTrendingUp } from "react-icons/io";
 import { IoMdTrendingDown } from "react-icons/io";
+import { RiArrowDownSFill } from "react-icons/ri";
+import { RiArrowUpSFill } from "react-icons/ri";
 
 export interface InsightsData {
   todayTotal: number;
@@ -13,6 +15,8 @@ export interface InsightsData {
   weeklyTotal: number;
   weeklyBlocked: number;
   dailyAverage: number;
+  averageBlockedPercentage: number;
+  dailyBlockedAverage: number;
   yesterdayTotal: number;
   yesterdayBlocked: number;
   blockedPercentage: number;
@@ -26,9 +30,9 @@ export interface InsightsData {
   focusScore: number;
   streak: number;
   bestDay: string;
-  bestDayTime: number;
+  bestDayBlockedTime: number;
   worstDay: string;
-  worstDayTime: number;
+  worstDayBlockedTime: number;
   lastUpdated: number;
 }
 
@@ -90,16 +94,17 @@ export default function Insights() {
     focusScoreFromYesterday,
     yesterdayFocusScore,
     blockedPercentage,
-    yesterdayBlockedPercentage,
-    diffFromAverage,
+    averageBlockedPercentage,
     weeklyBlocked,
     todayBlocked,
+    todayTotal,
     yesterdayBlocked,
-    dailyAverage,
+    yesterdayTotal,
+    dailyBlockedAverage,
     bestDay,
-    bestDayTime,
+    bestDayBlockedTime,
     worstDay,
-    worstDayTime,
+    worstDayBlockedTime,
   } = insights || {
     focusScore: 0,
     streak: 0,
@@ -108,84 +113,197 @@ export default function Insights() {
     focusScoreFromYesterday: 0,
     yesterdayFocusScore: 0,
     blockedPercentage: 0,
+    averageBlockPercentage: 0,
     yesterdayBlockedPercentage: 0,
     diffFromAverage: 0,
     weeklyBlocked: 0,
     todayBlocked: 0,
+    todayTotal: 0,
     yesterdayBlocked: 0,
+    yesterdayTotal: 0,
     dailyAverage: 0,
+    dailyBlockedAverage: 0,
     bestDay: "",
-    bestDayTime: 0,
+    bestDayBlockedTime: 0,
     worstDay: "",
-    worstDayTime: 0,
+    worstDayBlockedTime: 0,
   };
 
-  //const wastedMinutes = Math.floor(weeklyBlocked / 60);
-  // const workouts = Math.floor(wastedMinutes / 120);
-  //  const movies = Math.floor(wastedMinutes / 137);
+  const getFocusQuote = () => {
+    // Elite Tier: Score > 90
+    if (focusScore >= 90) {
+      return streak > 2
+        ? `${streak} day streak! You are completely locked in.`
+        : "Elite focus today. You're controlling your time perfectly.";
+    }
+
+    // Good Tier: Score 80 - 89
+    if (focusScore >= 80) {
+      return streak > 0
+        ? "Solid consistency. Keep the momentum going!"
+        : "Great session. You're making intentional choices.";
+    }
+
+    // Recovery Tier: Score < 80 but improved by at least 5 points
+    if (focusScoreFromYesterday >= 5) {
+      return `Moving in the right direction! ${Math.abs(focusScoreFromYesterday)} points up from yesterday.`;
+    }
+
+    // Slump Tier: Score dropped by more than 10 points
+    if (focusScoreFromYesterday <= -10) {
+      return "Focus is slipping today. Don't let this become a pattern.";
+    }
+
+    return "Every day is a fresh start. reclaim your attention.";
+  };
+
+  const getBlockedQuote = () => {
+    // Realistic "Zero" (Less than 5 minutes of blocked time is basically perfect)
+    if (todayBlocked < 300) {
+      return "Almost zero distractions today. Impressive discipline!";
+    }
+
+    // Significantly better than average (> 20% improvement)
+    if (dailyBlockedAverage > 0 && todayBlocked < dailyBlockedAverage * 0.8) {
+      const diff = (((dailyBlockedAverage - todayBlocked) / dailyBlockedAverage) * 100).toFixed(0);
+      return `${diff}% less distracted than usual. Keep it up!`;
+    }
+
+    // Roughly Average (Within 10% of average)
+    if (dailyBlockedAverage > 0 && Math.abs(todayBlocked - dailyBlockedAverage) / dailyBlockedAverage < 0.1) {
+      return "A typical day. Try to shave off 10 minutes tomorrow.";
+    }
+
+    // Significantly worse (> 20% worse)
+    if (dailyBlockedAverage > 0 && todayBlocked > dailyBlockedAverage * 1.2) {
+      const diff = (((todayBlocked - dailyBlockedAverage) / dailyBlockedAverage) * 100).toFixed(0);
+      return `Distractions are up ${diff}% today. Time to lock it back in.`;
+    }
+
+    return "Stay conscious of your browsing habits.";
+  };
+
+  const getComparisonQuote = () => {
+    // The "Perfect" Pivot: More total time, but LESS blocked time (High productivity)
+    if (timeSpentFromYesterday < -10 && blockedTimeFromYesterday > 10) {
+      return "Got something important? Screen time is up with less distraction.";
+    }
+
+    // Double Win: Less total time AND Less blocked time
+    if (blockedTimeFromYesterday > 0 && timeSpentFromYesterday > 0) {
+      return "Spending time wisely! Less time online & less distractions!";
+    }
+
+    // Improved Discipline only
+    if (blockedTimeFromYesterday > 5) {
+      return "Blocked time is down. You're resisting the urge to scroll.";
+    }
+
+    // Reduced Screen Time only
+    if (timeSpentFromYesterday > 5) {
+      return "Less screen time overall. That's healthy progress!";
+    }
+
+    return "Tomorrow is a new opportunity to improve your stats.";
+  };
+
+  const getRecordsQuote = () => {
+    const diff = (((worstDayBlockedTime - bestDayBlockedTime) / worstDayBlockedTime) * 100).toFixed(0);
+
+    // If their "Best Day" was practically zero distractions (< 5 mins)
+    if (bestDayBlockedTime < 300) {
+      return `Your were truly locked in on ${bestDay}! Keep it up, you got this!`;
+    }
+
+    // If the gap between best and worst is massive (> 1 hour difference)
+    if (worstDayBlockedTime - bestDayBlockedTime > 3600) {
+      return `${diff}% difference between ${bestDay} & ${worstDay}. Consistency is key!`;
+    }
+
+    // If the gap is small (Consistency check)
+    if (worstDayBlockedTime > 0 && worstDayBlockedTime - bestDayBlockedTime < 900) {
+      return "You are remarkably consistent with your habits. Keep it up!";
+    }
+
+    return "Build your best days by staying intentional.";
+  };
 
   return (
-    <div className="flex flex-col w-full h-full mt-4">
+    <div className="flex flex-col w-full h-full mt-2">
       <div className="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
         {/* Focus Score Card */}
         <div
           style={{ "--delay": `50ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col hover:bg-primary-dark border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <TbFocus2 className="size-4 text-secondary" />
             <span className="text-[12px] text-secondary uppercase">Current Session</span>
           </div>
-          <div className="flex-1 flex items-center justify-center">
-            <span
-              className={`text-2xl font-semibold flex items-center justify-center gap-1 ${focusScoreFromYesterday >= 0 ? "text-green-500" : "text-red-500"}`}
-            >
-              {focusScoreFromYesterday >= 0 ? <IoMdTrendingUp /> : <IoMdTrendingDown />}
-              {focusScore}
-            </span>
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-sub-text uppercase">Streak</span>
-            <span className="text-[10px] font-semibold text-text">{streak}d</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-sub-text uppercase">vs Yesterday</span>
-            <span
-              className={`text-[10px] font-semibold ${focusScoreFromYesterday >= 0 ? "text-green-500" : "text-red-500"}`}
-            >
-              <span className="text-text">{yesterdayFocusScore} </span>({focusScoreFromYesterday > 0 ? "+" : ""}
-              {focusScoreFromYesterday})
-            </span>
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col justify-center gap-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-sub-text uppercase">Lock In Score</span>
+                <span
+                  className={`text-sm font-semibold flex items-center justify-center gap-1 ${focusScoreFromYesterday >= 0 ? "text-green-500" : "text-red-500"}`}
+                >
+                  {focusScoreFromYesterday >= 0 ? <IoMdTrendingUp /> : <IoMdTrendingDown />}
+                  {focusScore}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-sub-text uppercase">Streak</span>
+                <span className="text-sm font-semibold text-text">{streak}d</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-sub-text uppercase">vs Yesterday</span>
+                <span
+                  className={`text-sm font-semibold ${focusScoreFromYesterday >= 0 ? "text-green-500" : "text-red-500"}`}
+                >
+                  <span className="text-text">{yesterdayFocusScore} </span>({focusScoreFromYesterday > 0 ? "+" : ""}
+                  {focusScoreFromYesterday})
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-1 pt-1 border-t border-bg-light">
+              <p className="text-[10px] text-sub-text leading-tight tracking-wide">{getFocusQuote()}</p>
+            </div>
           </div>
         </div>
 
         {/* Blocked Stats Card */}
         <div
           style={{ "--delay": `100ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col hover:bg-primary-dark border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <ImEyeBlocked className="size-4 text-secondary" />
             <span className="text-[12px] text-secondary uppercase">Blocked</span>
           </div>
-          <div className="flex-1 flex flex-col justify-center gap-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-sub-text uppercase">Today</span>
-              <span className="text-sm font-semibold text-text">
-                {formatTotalTime(todayBlocked)}{" "}
-                <span className="text-secondary font-normal">({blockedPercentage.toFixed(0)}%)</span>
-              </span>
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col justify-center gap-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-sub-text uppercase">Today</span>
+                <span className="text-sm font-semibold text-text">
+                  {formatTotalTime(todayBlocked)}{" "}
+                  <span className="text-secondary font-normal">({blockedPercentage.toFixed(0)}%)</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-sub-text uppercase">Daily Avg</span>
+                <span className="text-sm font-semibold text-text">
+                  {formatTotalTime(dailyBlockedAverage)}{" "}
+                  <span className="text-secondary font-normal">({averageBlockedPercentage.toFixed(0)}%)</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-sub-text uppercase">Weekly</span>
+                <span className="text-sm font-semibold text-text">{formatTotalTime(weeklyBlocked)}</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-sub-text uppercase">Yesterday</span>
-              <span className="text-sm font-semibold text-text">
-                {formatTotalTime(yesterdayBlocked)}{" "}
-                <span className="text-secondary font-normal">({yesterdayBlockedPercentage.toFixed(0)}%)</span>
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-sub-text uppercase">Weekly</span>
-              <span className="text-sm font-semibold text-text">{formatTotalTime(weeklyBlocked)}</span>
+            <div className="mt-1 pt-1 border-t border-bg-light">
+              <p className="text-[10px] text-sub-text leading-tight tracking-wide">{getBlockedQuote()}</p>
             </div>
           </div>
         </div>
@@ -193,34 +311,61 @@ export default function Insights() {
         {/* Comparison Card */}
         <div
           style={{ "--delay": `150ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col hover:bg-primary-dark border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <MdToday className="size-4 text-secondary" />
             <span className="text-[12px] text-secondary uppercase">vs Yesterday</span>
           </div>
-          <div className="flex-1 flex flex-col justify-center gap-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-sub-text uppercase">Time</span>
-              <span
-                className={`text-sm font-semibold ${timeSpentFromYesterday >= 0 ? "text-green-500" : "text-red-500"}`}
-              >
-                {timeSpentFromYesterday > 0 ? "+" : ""}
-                {timeSpentFromYesterday.toFixed(0)}%
-              </span>
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="flex items-center justify-center">
+                <span className="text-[10px] text-sub-text uppercase">Overall</span>
+                <span
+                  className={`text-[10px] font-semibold flex-row flex items-center ${timeSpentFromYesterday > 0 ? "text-green-500" : "text-red-500"}`}
+                >
+                  {timeSpentFromYesterday > 0 ? (
+                    <RiArrowDownSFill className="size-3" />
+                  ) : (
+                    <RiArrowUpSFill className="size-3" />
+                  )}
+                  {Math.abs(timeSpentFromYesterday).toFixed(0)}%
+                </span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-1 w-full">
+                <span className="text-sm font-semibold text-primary text-right tabular-nums leading-none">
+                  {formatTotalTime(todayTotal)}
+                </span>
+                <span className="text-sm font-semibold text-text leading-none">vs</span>
+                <span className="text-sm font-semibold text-secondary text-left tabular-nums leading-none">
+                  {formatTotalTime(yesterdayTotal)}
+                </span>
+              </div>
+              <div className="flex items-center justify-center mt-1">
+                <span className="text-[10px] text-sub-text uppercase">Blocked</span>
+                <span
+                  className={`text-[10px] font-semibold flex-row flex items-center ${blockedTimeFromYesterday > 0 ? "text-green-500" : "text-red-500"}`}
+                >
+                  {blockedTimeFromYesterday > 0 ? (
+                    <RiArrowDownSFill className="size-3" />
+                  ) : (
+                    <RiArrowUpSFill className="size-3" />
+                  )}
+                  {Math.abs(blockedTimeFromYesterday).toFixed(0)}%
+                </span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-1 w-full">
+                <span className="text-sm font-semibold text-primary text-right tabular-nums leading-none">
+                  {formatTotalTime(todayBlocked)}
+                </span>
+                <span className="text-sm font-semibold text-text leading-none">vs</span>
+                <span className="text-sm font-semibold text-secondary text-left leading-none">
+                  {formatTotalTime(yesterdayBlocked)}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-sub-text uppercase">Blocked</span>
-              <span
-                className={`text-sm font-semibold ${blockedTimeFromYesterday >= 0 ? "text-green-500" : "text-red-500"}`}
-              >
-                {blockedTimeFromYesterday > 0 ? "+" : ""}
-                {blockedTimeFromYesterday.toFixed(0)}%
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-sub-text uppercase">Avg Diff</span>
-              <span className="text-sm font-semibold text-text">{formatTimeDifference(diffFromAverage)}</span>
+            <div className="mt-1 pt-1 border-t border-bg-light justify-start">
+              <p className="text-[10px] text-sub-text leading-tight tracking-wide">{getComparisonQuote()}</p>
             </div>
           </div>
         </div>
@@ -228,30 +373,31 @@ export default function Insights() {
         {/* Records Card */}
         <div
           style={{ "--delay": `200ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col hover:bg-primary-dark border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <ImTrophy className="size-4 text-secondary" />
-            <span className="text-[12px] text-secondary uppercase">Records</span>
+            <span className="text-[12px] text-secondary uppercase">Best Days</span>
           </div>
-          <div className="flex-1 flex flex-col justify-center gap-1">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-green-500 uppercase">Best</span>
-                <span className="text-[10px] text-sub-text uppercase">{bestDay}</span>
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col justify-center gap-1">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-green-500 uppercase">Least Blocked</span>
+                  <span className="text-[10px] text-sub-text uppercase">{bestDay}</span>
+                </div>
+                <span className="text-sm font-semibold text-text">{formatTotalTime(bestDayBlockedTime)}</span>
               </div>
-              <span className="text-sm font-semibold text-text">{formatTotalTime(bestDayTime)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-red-500 uppercase">Worst</span>
-                <span className="text-[10px] text-sub-text uppercase">{worstDay}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-red-500 uppercase">Most Blocked</span>
+                  <span className="text-[10px] text-sub-text uppercase">{worstDay}</span>
+                </div>
+                <span className="text-sm font-semibold text-text">{formatTotalTime(worstDayBlockedTime)}</span>
               </div>
-              <span className="text-sm font-semibold text-text">{formatTotalTime(worstDayTime)}</span>
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-[10px] text-sub-text uppercase">Daily Avg</span>
-              <span className="text-sm font-semibold text-text">{formatTotalTime(dailyAverage)}</span>
+              <div className="mt-1 pt-1 border-t border-bg-light">
+                <p className="text-[10px] text-sub-text leading-tight tracking-wide">{getRecordsQuote()}</p>
+              </div>
             </div>
           </div>
         </div>
