@@ -537,6 +537,23 @@ async function checkDay() {
     console.log("CurrDay Global Times:", storeGlobalDay);
     // reset times for the new day
     await resetTodayTimeData();
+
+    // Timer reset on day rollover:
+    // If the countdown already finished (hit 0) or was never started, re-seed it
+    // from the original maxTime so today gets a fresh allowance.
+    // If it's still counting down (user was on a blocked site across midnight),
+    // leave it running. Once it hits 0 the action fires, and the NEXT day rollover
+    // (or the next active toggle) will seed a fresh copy.
+    const { tmpMaxTime } = await chrome.storage.local.get("tmpMaxTime");
+    const { active, maxTime } = await chrome.storage.sync.get(["active", "maxTime"]);
+
+    if (active && (tmpMaxTime === undefined || tmpMaxTime === null || tmpMaxTime <= 0)) {
+      await chrome.storage.local.set({ tmpMaxTime: maxTime, showAction: false });
+      console.log("[CheckDay] Timer expired or unused yesterday. Seeded fresh tmpMaxTime:", maxTime);
+    } else if (active && tmpMaxTime > 0) {
+      console.log("[CheckDay] Timer still counting down across midnight. Leaving tmpMaxTime at:", tmpMaxTime);
+    }
+
     await calculateInsights();
   } catch (error) {
     console.error("[checkDay Error]:", error);
@@ -569,11 +586,33 @@ async function commitTime(now, start, url) {
 
       // ONLY UPDATE IF TIMER IS ACTIVE
       // TIMER ONLY CHANGES
-      const { maxTime, active } = await chrome.storage.sync.get(["maxTime", "active"]);
+      const { active, action, redirect } = await chrome.storage.sync.get(["active", "action", "redirect"]);
+      let { tmpMaxTime } = await chrome.storage.local.get(["tmpMaxTime"]);
+
+      // Saftey check if tmpMaxTime is missing
+      if (active && (tmpMaxTime === undefined || tmpMaxTime === null)) {
+        const { maxTime } = await chrome.storage.sync.get("maxTime");
+        tmpMaxTime = maxTime;
+        await chrome.storage.local.set({ tmpMaxTime });
+        console.log("[Timer] tmpMaxTime was missing. Emergency seed from maxTime:", tmpMaxTime);
+      }
+
       if (active) {
-        const newMaxTime = Math.max(0, maxTime - delta);
-        await chrome.storage.sync.set({ maxTime: newMaxTime });
-        await chrome.storage.local.set({ showAction: newMaxTime <= 0 });
+        const newMaxTime = Math.max(0, tmpMaxTime - delta);
+        await chrome.storage.local.set({ tmpMaxTime: newMaxTime, showAction: newMaxTime <= 0 });
+
+        // Redirect fires once: only on the tick that actually crosses zero,
+        // not on every subsequent tick while maxTime stays at 0.
+        if (newMaxTime <= 0 && tmpMaxTime > 0 && action === "Redirect" && redirect) {
+          const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          if (activeTab?.id) {
+            // Ensure the redirect URL has a protocol so chrome doesn't treat it as a search
+            const target = redirect.startsWith("http") ? redirect : `https://${redirect}`;
+            chrome.tabs.update(activeTab.id, { url: target });
+            console.log(`[Redirect] Timer expired. Redirecting tab ${activeTab.id} to ${target}`);
+          }
+        }
+
         console.log("[Timer Active] Remaining Time:", newMaxTime);
       } else {
         console.log(`[Timer Disable] adding: ${delta} to ${domain}`);
@@ -600,8 +639,12 @@ async function syncSession(tabUrl, reason) {
     //const today = new Date().getDay();
 
     // grab user settings
-    const { globalSwitch, active, maxTime } = await chrome.storage.sync.get(["globalSwitch", "active", "maxTime"]);
-    const { currentSite, startTime } = await chrome.storage.local.get(["currentSite", "startTime"]);
+    const { globalSwitch, active } = await chrome.storage.sync.get(["globalSwitch", "active"]);
+    const { currentSite, startTime, tmpMaxTime } = await chrome.storage.local.get([
+      "currentSite",
+      "startTime",
+      "tmpMaxTime",
+    ]);
 
     // // make a check to see if scripts exist before blocking
     // const scripts = await chrome.scripting.getRegisteredContentScripts();
@@ -628,7 +671,7 @@ async function syncSession(tabUrl, reason) {
       await chrome.storage.local.set({
         startTime: now,
         currentSite: tabUrl,
-        showAction: !(active && maxTime > 0),
+        showAction: !(active && tmpMaxTime > 0),
       });
     }
   } catch (error) {
@@ -704,10 +747,15 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
     console.log("[Settings] Change detected:", Object.keys(changes));
 
     if (changes.maxTime) {
-      const { startTime } = await chrome.storage.local.get("startTime");
-      if (startTime) {
-        return;
-      }
+      const newMaxTime = changes.maxTime.newValue;
+      await chrome.storage.local.set({ tmpMaxTime: newMaxTime, showAction: false });
+      console.log("[Settings] maxTime changed. Reseeded tmpMaxTime to:", newMaxTime);
+    }
+    // When active toggles ON, also seed tmpMaxTime from current maxTime if it wasn't just set above
+    if (changes.active && changes.active.newValue === true && !changes.maxTime) {
+      const { maxTime } = await chrome.storage.sync.get("maxTime");
+      await chrome.storage.local.set({ tmpMaxTime: maxTime, showAction: false });
+      console.log("[Timer] active toggled ON. Seeded tmpMaxTime from maxTime:", maxTime);
     }
 
     // handles timer and global switches to stop the clock immediately

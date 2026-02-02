@@ -1,6 +1,6 @@
 import { type Website } from "../pages/Websites";
 
-// Checks if the site has a valid url
+// Checks if the current site has a valid url
 export async function isValid(tabUrl: string | undefined): Promise<boolean> {
   if (!tabUrl) return false;
   // if url includes invalid strings
@@ -8,6 +8,27 @@ export async function isValid(tabUrl: string | undefined): Promise<boolean> {
     return false;
   }
   return tabUrl.includes("://");
+}
+
+// helper function to check if user entered website is valid
+// used in Websites and Settings
+export async function isValidSyntax(str: string) {
+  try {
+    const urlString = str.includes("://") ? str : "https://" + str;
+    const url = new URL(urlString);
+    const hostname = url.hostname;
+
+    // Check for dots
+    const parts = hostname.split(".");
+    const tld = parts[parts.length - 1];
+    const hasDot = parts.length > 1;
+    const validTld = tld.length >= 2;
+
+    return hasDot && validTld;
+  } catch (e) {
+    console.log("Debug - URL Constructor Failed", e);
+    return false;
+  }
 }
 
 // helper function checks if website is blocked

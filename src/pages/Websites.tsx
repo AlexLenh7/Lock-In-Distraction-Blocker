@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isValidSyntax } from "../utils/Helpers";
 
 export type Website = { id: string; text: string };
 
@@ -12,26 +13,6 @@ export default function Websites({ website, setWebsite }: Props) {
   const [text, setText] = useState<string>("");
   const [isAlert, setAlert] = useState<string>("");
 
-  // helper function to check if website is valid
-  const isValidSyntax = (str: string) => {
-    try {
-      const urlString = str.includes("://") ? str : "https://" + str;
-      const url = new URL(urlString);
-      const hostname = url.hostname;
-
-      // Check for dots
-      const parts = hostname.split(".");
-      const tld = parts[parts.length - 1];
-      const hasDot = parts.length > 1;
-      const validTld = tld.length >= 2;
-
-      return hasDot && validTld;
-    } catch (e) {
-      console.log("Debug - URL Constructor Failed", e);
-      return false;
-    }
-  };
-
   useEffect(() => {
     if (isAlert) {
       const timer = setTimeout(() => {
@@ -43,7 +24,7 @@ export default function Websites({ website, setWebsite }: Props) {
   }, [isAlert]);
 
   // we want add website to push each onClick change in input
-  const addWebsite = () => {
+  const addWebsite = async () => {
     const valid = text.trim();
     const urlString = valid.includes("://") ? valid : "https://" + valid;
     const domain = new URL(urlString).hostname.replace(/^www\./, "");
@@ -53,8 +34,10 @@ export default function Websites({ website, setWebsite }: Props) {
     // checks if string is empty
     if (!valid) return;
 
+    const isValid = await isValidSyntax(valid);
+
     // checks if string has valid syntax
-    if (!isValidSyntax(valid)) {
+    if (!isValid) {
       setAlert("Please enter a valid domain!");
       return;
     }
@@ -87,11 +70,11 @@ export default function Websites({ website, setWebsite }: Props) {
       {/* Input field */}
       <div className="border-bg-light border-2 animate-fade-in flex flex-col h-fit overflow-hidden">
         <div className="w-full flex flex-row gap-2 shrink-0">
-          <div className="w-full text-text border-b-2 border-bg-light">
+          <div className="w-full text-text border-b-2 border-bg-light transition-all duration-200">
             <input
               type="text"
               placeholder="Enter a website (e.g. youtube.com)"
-              className="w-full p-2 focus:outline-none focus:bg-primary hover:bg-primary-dark transition-all duration-300"
+              className="w-full p-2 focus:outline-none focus:bg-primary hover:bg-primary-dark transition-all duration-200"
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addWebsite()}
@@ -107,14 +90,14 @@ export default function Websites({ website, setWebsite }: Props) {
           {website.map((site, index) => (
             <span
               style={{ "--delay": `${index * 50}ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger justify-between items-center flex hover:bg-primary-dark text-text focus-within:bg-primary focus-within:hover:bg-primary"
+              className="animate-fade-up transition-all duration-200 animate-stagger justify-between items-center flex hover:bg-primary-dark text-text focus-within:bg-primary focus-within:hover:bg-primary"
             >
               <input
                 key={site.id}
                 type="text"
                 value={site.text}
                 onChange={(e) => updateRemove(site.id, e.target.value)}
-                className="w-full p-2 transition-all duration-300 bg-transparent focus:outline-none"
+                className="w-full p-2 bg-transparent focus:outline-none"
               />
             </span>
           ))}

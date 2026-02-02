@@ -247,11 +247,11 @@ export default function Dashboard() {
                 <li
                   key={`${active}${index}${site.domain}`}
                   style={{ "--delay": `${index * 50}ms` } as React.CSSProperties}
-                  className="flex animate-fade-up animate-stagger group justify-between gap-1 items-center whitespace-nowrap hover:bg-bg-light text-xs p-1.25"
+                  className="flex animate-fade-up animate-stagger group justify-between gap-1 items-center whitespace-nowrap hover:bg-bg-light text-xs p-1.25 transition-all duration-100"
                 >
                   <span className="flex flex-row items-center truncate">
                     <span
-                      className="w-2 h-2 mr-1 shrink-0 flex items-center transition-all duration-300"
+                      className="w-2 h-2 mr-1 shrink-0 flex items-center"
                       style={{ backgroundColor: site.color }}
                     ></span>
                     <span className="text-sub-text group-hover:text-text truncate">{site.domain}</span>

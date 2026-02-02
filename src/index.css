@@ -277,6 +277,25 @@ input::-webkit-inner-spin-button {
     }
   }
 
+  @keyframes alert-fade {
+    0% {
+      opacity: 0;
+      transform: translate(0%, 10px);
+    }
+    20% {
+      opacity: 1;
+      transform: translate(0%, 0);
+    }
+    80% {
+      opacity: 1;
+      transform: translate(0%, 0);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(0%, 10px);
+    }
+  }
+
   --animate-shake-fade: shake-fade 2s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  --animate-shake: shake;
+  --animate-fade: alert-fade 2s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }

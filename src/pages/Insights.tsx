@@ -130,26 +130,26 @@ export default function Insights() {
   };
 
   const getFocusQuote = () => {
-    // Elite Tier: Score > 90
+    // Score > 90
     if (focusScore >= 90) {
       return streak > 2
         ? `${streak} day streak! You are completely locked in.`
         : "Elite focus today. You're controlling your time perfectly.";
     }
 
-    // Good Tier: Score 80 - 89
+    // Score 80 - 89
     if (focusScore >= 80) {
       return streak > 0
         ? "Solid consistency. Keep the momentum going!"
         : "Great session. You're making intentional choices.";
     }
 
-    // Recovery Tier: Score < 80 but improved by at least 5 points
+    // Score < 80 but improved by at least 5 points
     if (focusScoreFromYesterday >= 5) {
       return `Moving in the right direction! ${Math.abs(focusScoreFromYesterday)} points up from yesterday.`;
     }
 
-    // Slump Tier: Score dropped by more than 10 points
+    // Score dropped by more than 10 points
     if (focusScoreFromYesterday <= -10) {
       return "Focus is slipping today. Don't let this become a pattern.";
     }
@@ -158,12 +158,12 @@ export default function Insights() {
   };
 
   const getBlockedQuote = () => {
-    // Realistic "Zero" (Less than 5 minutes of blocked time is basically perfect)
+    // Basically no distractions
     if (todayBlocked < 300) {
       return "Almost zero distractions today. Impressive discipline!";
     }
 
-    // Significantly better than average (> 20% improvement)
+    // Better than average (> 20% improvement)
     if (dailyBlockedAverage > 0 && todayBlocked < dailyBlockedAverage * 0.8) {
       const diff = (((dailyBlockedAverage - todayBlocked) / dailyBlockedAverage) * 100).toFixed(0);
       return `${diff}% less distracted than usual. Keep it up!`;
@@ -184,12 +184,12 @@ export default function Insights() {
   };
 
   const getComparisonQuote = () => {
-    // The "Perfect" Pivot: More total time, but LESS blocked time (High productivity)
+    // More total time but LESS blocked time (best scenario)
     if (timeSpentFromYesterday < -10 && blockedTimeFromYesterday > 10) {
       return "Got something important? Screen time is up with less distraction.";
     }
 
-    // Double Win: Less total time AND Less blocked time
+    // Less total time AND Less blocked time
     if (blockedTimeFromYesterday > 0 && timeSpentFromYesterday > 0) {
       return "Spending time wisely! Less time online & less distractions!";
     }
@@ -210,17 +210,17 @@ export default function Insights() {
   const getRecordsQuote = () => {
     const diff = (((worstDayBlockedTime - bestDayBlockedTime) / worstDayBlockedTime) * 100).toFixed(0);
 
-    // If their "Best Day" was practically zero distractions (< 5 mins)
+    // Basically no distractions
     if (bestDayBlockedTime < 300) {
       return `Your were truly locked in on ${bestDay}! Keep it up, you got this!`;
     }
 
-    // If the gap between best and worst is massive (> 1 hour difference)
+    // Large gap between best and worst
     if (worstDayBlockedTime - bestDayBlockedTime > 3600) {
       return `${diff}% difference between ${bestDay} & ${worstDay}. Consistency is key!`;
     }
 
-    // If the gap is small (Consistency check)
+    // Small gap good consistency
     if (worstDayBlockedTime > 0 && worstDayBlockedTime - bestDayBlockedTime < 900) {
       return "You are remarkably consistent with your habits. Keep it up!";
     }

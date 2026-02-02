@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { checkBlock } from "../utils/Helpers";
+import { isValidSyntax } from "../utils/Helpers";
 
 export default function Settings() {
   const buttonStates = [
-    { id: 1, state: "Block", description: "Prevents site visit" },
-    { id: 2, state: "Warn", description: "Notification but can close out" },
-    { id: 3, state: "Disabled", description: "Just disabled" },
+    { id: 1, state: "Block", description: "Blocks content viewing" },
+    { id: 2, state: "Redirect", description: "Redirects to a chosen site" },
+    { id: 3, state: "Warn", description: "Notifies when your time is up" },
+    { id: 4, state: "Disabled", description: "Website action is disabled" },
   ];
 
   const [action, setAction] = useState<string | null>(null);
@@ -14,6 +17,9 @@ export default function Settings() {
   const [settingTab, setSettingTab] = useState<string>("Basic");
   const [afkTimer, setAfkTimer] = useState({ minutes: 1 });
   const [afkActive, setAfkActive] = useState<boolean | null>(null);
+  const [redirect, setRedirect] = useState<string>("");
+  const [isAlert, setAlert] = useState<string>("");
+  const [savedRedirect, setSavedRedirect] = useState<string>("");
 
   function convertTime(totalSec: number) {
     const hour = Math.floor(totalSec / 3600);
@@ -24,18 +30,21 @@ export default function Settings() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { maxTime, action, active, afkTime, afkActive } = await chrome.storage.sync.get([
+        const { maxTime, action, active, afkTime, afkActive, redirect } = await chrome.storage.sync.get([
           "maxTime",
           "action",
           "active",
           "afkTime",
           "afkActive",
+          "redirect",
         ]);
 
         // grab button states and update ui
         setAction(action as string);
         setActive(active as boolean);
         setAfkActive(afkActive as boolean);
+        setRedirect(redirect as string);
+        setSavedRedirect(redirect as string);
 
         const { min: afkMin } = convertTime(afkTime as number);
         setAfkTimer({ minutes: afkMin });
@@ -84,14 +93,59 @@ export default function Settings() {
     chrome.storage.sync.set({ action: newAction });
   };
 
-  // saves action to storage on change
+  const handleKeyDown = async () => {
+    const valid = await isValidSyntax(redirect);
+    if (!valid) {
+      setAlert("Please enter a valid domain!");
+    } else {
+      const urlToCheck = redirect.includes("://") ? redirect : "https://" + redirect;
+      const blocked = await checkBlock(urlToCheck);
+      if (blocked) {
+        setAlert("Can't redirect to a blocked site!");
+      } else {
+        setSavedRedirect(redirect);
+        chrome.storage.sync.set({ redirect });
+        setAlert("Redirect saved!");
+      }
+    }
+  };
+
+  const handleBlur = async () => {
+    const valid = await isValidSyntax(redirect);
+    if (!valid) {
+      setAlert("Please enter a valid domain!");
+      setRedirect(savedRedirect);
+    } else {
+      const urlToCheck = redirect.includes("://") ? redirect : "https://" + redirect;
+      const blocked = await checkBlock(urlToCheck);
+      if (blocked) {
+        setAlert("Can't redirect to a blocked site!");
+        setRedirect(savedRedirect);
+      } else {
+        if (savedRedirect === redirect) {
+          setAlert("");
+        } else {
+          setSavedRedirect(redirect);
+          chrome.storage.sync.set({ redirect });
+          setAlert("Redirect saved!");
+        }
+      }
+    }
+  };
+
   useEffect(() => {
-    chrome.storage.sync.set({ action });
-  }, [action]);
+    if (isAlert) {
+      const timer = setTimeout(() => {
+        setAlert("");
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAlert]);
 
   // check if settings are loaded before showing ui
   if (!isLoaded) {
-    return <div className="bg-(--color-primary-background)"></div>;
+    return <div className="bg-bg"></div>;
   }
 
   return (
@@ -139,6 +193,8 @@ export default function Settings() {
 
                 if (finalVal > 24) {
                   chrome.storage.sync.set({ maxTime: saveTime(0, time.minutes) });
+                } else if (finalVal === 24) {
+                  chrome.storage.sync.set({ maxTime: saveTime(finalVal, 0) });
                 } else {
                   chrome.storage.sync.set({ maxTime: saveTime(finalVal, time.minutes) });
                 }
@@ -179,19 +235,19 @@ export default function Settings() {
         </div>
         <p
           style={{ "--delay": `100ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex justify-center mb-4 mt-1 text-sub-text"
+          className="animate-fade-up animate-stagger flex justify-center mb-2 mt-1 text-sub-text"
         >
-          Maximum time allowed
+          Daily maximum time allowed
         </p>
         <div
           style={{ "--delay": `50ms` } as React.CSSProperties}
-          className={`animate-fade-up animate-stagger relative grid grid-cols-3 items-center w-full border-2 transition-all duration-300 ease-in-out ${action === "Disabled" ? "border-bg-light" : "border-primary"} bg-transparent overflow-hidden`}
+          className={`animate-fade-up animate-stagger relative grid grid-cols-4 items-center w-full border-2 transition-all duration-300 ease-in-out ${action === "Disabled" ? "border-bg-light" : "border-primary"} bg-transparent overflow-hidden`}
         >
           {/* Sliding button */}
           <div
             className={`absolute h-full transition-all duration-300 ease-in-out ${action === "Disabled" ? "bg-transparent" : "bg-primary-dark"}`}
             style={{
-              width: "33.33%",
+              width: "25%",
               transform: `translateX(${buttonStates.findIndex((b) => b.state === action) * 100}%)`,
             }}
           />
@@ -199,13 +255,7 @@ export default function Settings() {
             <button
               key={b.id}
               onClick={() => updateAction(b.state)}
-              className={`z-10 flex justify-center items-center p-1 hover:bg-primary-dark cursor-pointer transition-all duration-300 col-${b.id} ${
-                action === "Block"
-                  ? `${b.state === action ? "text-text" : "text-sub-text"}`
-                  : action === "Warn"
-                    ? `${b.state === action ? "text-text" : "text-sub-text"}`
-                    : `${b.state === action ? "text-sub-text" : "text-sub-text"} border-bg-light hover:bg-primary-dark`
-              }`}
+              className={`z-10 flex justify-center items-center p-1 hover:bg-primary-dark cursor-pointer transition-all duration-300 col-${b.id} ${b.state === action ? "text-text" : "text-sub-text"} ${action !== "Block" && action !== "Warn" && action !== "Redirect" ? "border-bg-light" : ""}`}
             >
               {b.state}
             </button>
@@ -221,9 +271,45 @@ export default function Settings() {
             </p>
           ))}
         </div>
+        {action === "Redirect" && (
+          <div>
+            <input
+              style={{ "--delay": `50ms` } as React.CSSProperties}
+              className={`animate-fade-up text-center animate-stagger focus:border-primary focus:bg-primary-dark focus:hover:bg-primary-dark text-text w-full flex border-2 p-1 mt-2 transition-all duration-300 hover:bg-primary-dark outline-none ${redirect.length > 0 ? `border-primary` : `border-bg-light`} truncate`}
+              type="text"
+              value={redirect}
+              placeholder="Enter a site to be redirected"
+              onChange={(e) => setRedirect(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleKeyDown()}
+              onBlur={handleBlur}
+            />
+            <span
+              style={{ "--delay": `100ms` } as React.CSSProperties}
+              className="animate-fade-up animate-stagger flex justify-center mt-1 text-sub-text"
+            >
+              Enter a valid website to redirect
+            </span>
+          </div>
+        )}
+        {action === "Block" && (
+          <div>
+            <button
+              style={{ "--delay": `50ms` } as React.CSSProperties}
+              className={`cursor-pointer animate-fade-up justify-center animate-stagger text-text w-full flex border-2 border-primary-dark p-1 mt-2 transition-all duration-300 hover:bg-primary-dark outline-none`}
+            >
+              Nuke
+            </button>
+            <span
+              style={{ "--delay": `100ms` } as React.CSSProperties}
+              className="animate-fade-up animate-stagger flex justify-center mt-1 text-sub-text"
+            >
+              No warning or notification just complete deletion
+            </span>
+          </div>
+        )}
         <div
           style={{ "--delay": `50ms` } as React.CSSProperties}
-          className={`animate-fade-up animate-stagger grid grid-cols-2 w-full border-2 justify-center mt-4 transition-all duration-300 ${afkActive ? "border-primary" : "border-bg-light"}`}
+          className={`animate-fade-up animate-stagger grid grid-cols-2 w-full border-2 justify-center mt-2 transition-all duration-300 ${afkActive ? "border-primary" : "border-bg-light"}`}
         >
           {/* AFK Minutes Input */}
           <div className="grid grid-cols-2 col-1 w-full">
@@ -262,6 +348,13 @@ export default function Settings() {
           Total time of inactivity before AFK state
         </span>
       </div>
+      {isAlert && (
+        <div
+          className={`${isAlert.includes("saved") ? "animate-fade" : "animate-shake-fade"} bg-primary text-text w-[95%] border-2 border-secondary shadow-lg shadow-secondary/50 p-1 flex justify-center absolute bottom-4 left-1/2 -translate-x-1/2 rounded`}
+        >
+          {isAlert}
+        </div>
+      )}
     </div>
   );
 }
