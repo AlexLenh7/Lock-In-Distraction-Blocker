@@ -6,15 +6,15 @@ A powerful Chrome extension designed to help you stay focused by tracking and li
 
 ## 📋 Table of Contents
 
-- [Features](#features)
-- [Installation](#installation)
-- [How to Use](#how-to-use)
-- [Settings Guide](#settings-guide)
-- [Dashboard Overview](#dashboard-overview)
-- [Insights](#insights)
-- [FAQ](#faq)
-- [Privacy](#privacy)
-- [Contributing](#contributing)
+- [Features](#-features)
+- [Installation](#-installation)
+- [How to Use](#-how-to-use)
+- [Settings Guide](#️-settings-guide)
+- [Dashboard Overview](#-dashboard-overview)
+- [Insights](#-insights)
+- [FAQ](#-faq)
+- [Privacy](#-privacy)
+- [Contributing](#-contributing)
 
 ---
 
