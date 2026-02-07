@@ -1,4 +1,4 @@
-import { isValid, checkBlock } from "../utils/Helpers";
+import { isValid, checkBlock, sumObjectValues } from "../utils/Helpers";
 
 async function calculateInsights() {
   try {
@@ -21,8 +21,8 @@ async function calculateInsights() {
     const todayName = days[todayIndex];
 
     // Calculate today's totals
-    const todayGlobalTotal = Object.values(globalWebsiteTime).reduce((sum, time) => sum + time, 0);
-    const todayBlockedTotal = Object.values(totalWebsiteTime).reduce((sum, time) => sum + time, 0);
+    const todayGlobalTotal = sumObjectValues(globalWebsiteTime);
+    const todayBlockedTotal = sumObjectValues(totalWebsiteTime);
 
     // Calculate weekly totals
     let weeklyGlobalTotal = todayGlobalTotal;
@@ -35,13 +35,13 @@ async function calculateInsights() {
         const dayBlockData = storeBlockDay[day];
 
         if (dayGlobalData && typeof dayGlobalData === "object") {
-          const dayGlobalTotal = Object.values(dayGlobalData).reduce((sum, time) => sum + time, 0);
+          const dayGlobalTotal = sumObjectValues(dayGlobalData);
           weeklyGlobalTotal += dayGlobalTotal;
           if (dayGlobalTotal > 0) daysWithData++;
         }
 
         if (dayBlockData && typeof dayBlockData === "object") {
-          const dayBlockedTotal = Object.values(dayBlockData).reduce((sum, time) => sum + time, 0);
+          const dayBlockedTotal = sumObjectValues(dayBlockData);
           weeklyBlockedTotal += dayBlockedTotal;
         }
       }
@@ -56,15 +56,8 @@ async function calculateInsights() {
     const yesterdayGlobalData = storeGlobalDay[yesterdayName];
     const yesterdayBlockData = storeBlockDay[yesterdayName];
 
-    const yesterdayTotal =
-      yesterdayGlobalData && typeof yesterdayGlobalData === "object"
-        ? Object.values(yesterdayGlobalData).reduce((sum, time) => sum + time, 0)
-        : 0;
-
-    const yesterdayBlocked =
-      yesterdayBlockData && typeof yesterdayBlockData === "object"
-        ? Object.values(yesterdayBlockData).reduce((sum, time) => sum + time, 0)
-        : 0;
+    const yesterdayTotal = sumObjectValues(yesterdayGlobalData);
+    const yesterdayBlocked = sumObjectValues(yesterdayBlockData);
 
     // Calculate percentage of time on blocked sites
     const blockedPercentage = todayGlobalTotal > 0 ? (todayBlockedTotal / todayGlobalTotal) * 100 : 0;
@@ -133,7 +126,7 @@ async function calculateInsights() {
     const dayBeforeYesterdayBlockData = storeBlockDay[dayBeforeYesterdayName];
     const dayBeforeYesterdayBlocked =
       dayBeforeYesterdayBlockData && typeof dayBeforeYesterdayBlockData === "object"
-        ? Object.values(dayBeforeYesterdayBlockData).reduce((sum, time) => sum + time, 0)
+        ? sumObjectValues(dayBeforeYesterdayBlockData)
         : 0;
 
     const yesterdayFocusScore = calculateDayFocusScore(yesterdayTotal, yesterdayBlocked, dayBeforeYesterdayBlocked);
@@ -144,34 +137,36 @@ async function calculateInsights() {
     // Calculate streak (consecutive days with focus score > 80)
     let streak = 0;
 
+    // Pre-calculate all day totals to avoid repeated reduce calls
+    const dayTotalsCache = {};
+    days.forEach((day) => {
+      const dayGlobalData = storeGlobalDay[day];
+      const dayBlockData = storeBlockDay[day];
+      dayTotalsCache[day] = {
+        global: sumObjectValues(dayGlobalData),
+        blocked: sumObjectValues(dayBlockData),
+      };
+    });
+
     if (focusScore > 79) {
       streak = 1;
 
       for (let i = 1; i < 7; i++) {
         const checkDayIndex = (todayIndex - i + 7) % 7;
         const checkDayName = days[checkDayIndex];
-        const checkDayGlobalData = storeGlobalDay[checkDayName];
-        const checkDayBlockData = storeBlockDay[checkDayName];
 
-        if (!checkDayGlobalData || typeof checkDayGlobalData !== "object") {
-          break;
-        }
-
-        const checkDayGlobalTotal = Object.values(checkDayGlobalData).reduce((sum, time) => sum + time, 0);
-        const checkDayBlockedTotal =
-          checkDayBlockData && typeof checkDayBlockData === "object"
-            ? Object.values(checkDayBlockData).reduce((sum, time) => sum + time, 0)
-            : 0;
+        const checkDayTotals = dayTotalsCache[checkDayName];
+        if (!checkDayTotals || checkDayTotals.global === 0) break;
 
         const prevCheckDayIndex = (checkDayIndex - 1 + 7) % 7;
         const prevCheckDayName = days[prevCheckDayIndex];
-        const prevCheckDayBlockData = storeBlockDay[prevCheckDayName];
-        const prevCheckDayBlockedTotal =
-          prevCheckDayBlockData && typeof prevCheckDayBlockData === "object"
-            ? Object.values(prevCheckDayBlockData).reduce((sum, time) => sum + time, 0)
-            : 0;
+        const prevCheckDayTotals = dayTotalsCache[prevCheckDayName];
 
-        const dayScore = calculateDayFocusScore(checkDayGlobalTotal, checkDayBlockedTotal, prevCheckDayBlockedTotal);
+        const dayScore = calculateDayFocusScore(
+          checkDayTotals.global,
+          checkDayTotals.blocked,
+          prevCheckDayTotals ? prevCheckDayTotals.blocked : 0,
+        );
 
         if (dayScore > 79) {
           streak++;
@@ -192,13 +187,10 @@ async function calculateInsights() {
     }
 
     days.forEach((day) => {
-      if (day !== todayName) {
-        const dayBlockData = storeBlockDay[day];
-        if (dayBlockData && typeof dayBlockData === "object") {
-          const dayBlockedTotal = Object.values(dayBlockData).reduce((sum, time) => sum + time, 0);
-          if (dayBlockedTotal > 0) {
-            blockedDaysData.push({ name: day, blockedTime: dayBlockedTotal });
-          }
+      if (day !== todayName && dayTotalsCache[day]) {
+        const dayBlockedTotal = dayTotalsCache[day].blocked;
+        if (dayBlockedTotal > 0) {
+          blockedDaysData.push({ name: day, blockedTime: dayBlockedTotal });
         }
       }
     });
@@ -268,7 +260,7 @@ async function handleAfkTime() {
 }
 
 // handles user return from idle state
-async function handleUserReturn() {
+async function verifyUserReturn() {
   const { idleStart, afkReached } = await chrome.storage.local.get(["idleStart", "afkReached"]);
 
   if (idleStart || afkReached) {
@@ -277,8 +269,6 @@ async function handleUserReturn() {
       pendingReturn: true,
       returnCheckTime: Date.now(),
     });
-
-    await chrome.storage.local.remove(["idleStart"]);
 
     console.log("[Idle State] User returned, waiting 30s to verify...");
   }
@@ -295,32 +285,50 @@ chrome.idle.onStateChanged.addListener(async (newState) => {
 
   // User enters idle state (after 30 seconds of inactivity)
   if (newState === "idle") {
-    const { idleStart, afkReached } = await chrome.storage.local.get(["idleStart", "afkReached"]);
+    const { idleStart, afkReached, currentSite, startTime } = await chrome.storage.local.get([
+      "idleStart",
+      "afkReached",
+      "currentSite",
+      "startTime",
+    ]);
+
+    // commit remaining time when entering idle
+    if (currentSite && startTime && !afkReached && !idleStart) {
+      const now = Date.now();
+      await commitTime(now, startTime, currentSite);
+      await chrome.storage.local.set({ startTime: now });
+      console.log("[Idle State] Committed pre-idle time chunk");
+    }
 
     // If user was fully AFK and goes idle again, start fresh
     if (afkReached) {
-      console.log("[Idle State] User was AFK, now idle again - resetting and starting fresh");
+      // Create AFK alarm
       await chrome.storage.local.remove(["afkReached", "tmpAfkTime"]);
       await chrome.storage.local.set({ idleStart: Date.now() });
-      // Create AFK alarm
       chrome.alarms.create("AFKalarm", { periodInMinutes: 0.5 });
-      console.log("[AFK Alarm] Created");
+
+      console.log("[Idle State] User was AFK, now idle again - resetting and starting fresh");
     } else if (!idleStart) {
-      console.log("[Idle State] User is idle, starting idle timer");
-      await chrome.storage.local.set({ idleStart: Date.now() });
       // Create AFK alarm to track idle time
+      await chrome.storage.local.set({ idleStart: Date.now(), afkReached: false });
       chrome.alarms.create("AFKalarm", { periodInMinutes: 0.5 });
-      console.log("[AFK Alarm] Created");
+
+      console.log("[Idle State] User is idle, starting idle timer");
     } else {
       console.log("[Idle State] Already tracking idle time, ignoring state change");
+
+      // FIX: If we were verifying a return, but the user went back to idle, cancel the check!
+      const { pendingReturn } = await chrome.storage.local.get("pendingReturn");
+      if (pendingReturn) {
+        console.log("[Idle State] User went back to idle during verification. Resuming.");
+        await chrome.storage.local.remove(["pendingReturn", "returnCheckTime"]);
+      }
     }
   }
   // User returns to active state
   else if (newState === "active") {
     console.log("[Idle State] User returned to active");
     const { afkReached } = await chrome.storage.local.get("afkReached");
-
-    // Clear AFK alarm since user is back
 
     // If user was fully AFK and returns, reset everything immediately
     if (afkReached) {
@@ -337,7 +345,7 @@ chrome.idle.onStateChanged.addListener(async (newState) => {
     } else {
       // Normal return verify for 30 seconds
       console.log("[Idle State] Keeping AFK alarm active for 30s verification");
-      await handleUserReturn();
+      await verifyUserReturn();
     }
   }
 });
@@ -379,8 +387,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       if (pendingReturn === true && returnCheckTime) {
         const timeSinceReturn = Math.round((Date.now() - returnCheckTime) / 1000);
 
+        const isUserBack = timeSinceReturn < 30;
+
+        console.log("timeSinceReturn", timeSinceReturn, "[idleStart]:", idleStart);
+        console.log("isUserBack:", isUserBack);
+
         // If 30+ seconds passed and user is still active (no new idleStart)
-        if (timeSinceReturn >= 30 && !idleStart) {
+        if (isUserBack) {
           console.log("[Idle State] User confirmed back, resuming normal tracking");
           // Reset all idle/AFK related flags
           await chrome.storage.local.remove([
@@ -423,9 +436,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         const elapsed = Math.round((Date.now() - idleStart) / 1000);
         const { afkTime, afkActive } = await chrome.storage.sync.get(["afkTime", "afkActive"]);
 
-        // Initialize tmpAfkTime if it doesn't exist
-        const currentTmpAfkTime = tmpAfkTime !== undefined ? tmpAfkTime : afkTime;
-
         // User has reached true AFK threshold
         if (elapsed >= afkTime && afkActive) {
           console.log(`[AFK] User reached AFK threshold (${afkTime}s), stopping tracking`);
@@ -440,7 +450,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
         // User is idle but hasn't reached AFK threshold yet
         // Account for 30 second intervals between idle checks
-        const newTmpAfkTime = Math.max(0, currentTmpAfkTime - 30);
+        const newTmpAfkTime = Math.max(0, elapsed - afkTime);
         await chrome.storage.local.set({ tmpAfkTime: newTmpAfkTime });
 
         console.log(`[AFK] Idle for ${elapsed}s / ${afkTime}s (tmpAfkTime: ${newTmpAfkTime}s), continuing to track`);
@@ -459,28 +469,27 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-// create the alarm fires 30 seconds
-chrome.runtime.onInstalled.addListener(async () => {
+// declare functions to run on start/update
+async function startUpEvent() {
   try {
-    chrome.alarms.create("alarm", { periodInMinutes: 0.5 });
+    console.log("[Starting Up Extension]");
     await updateContentScript();
-    chrome.idle.setDetectionInterval(30);
     await resetAfkChecks();
-    //await resetInsights();
-    //await resetWeeklyData();
-    //cleanupTodayTimeData();
+    chrome.idle.setDetectionInterval(30);
+    chrome.alarms.create("alarm", { periodInMinutes: 0.5 });
   } catch (error) {
-    console.error("[onInstall Error]:", error);
+    console.error("[StartUp Error]:", error);
   }
+}
+
+chrome.runtime.onInstalled.addListener(async () => {
+  console.log("[onInstalled Called]");
+  await startUpEvent();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  try {
-    await updateContentScript();
-    await checkDay();
-  } catch (error) {
-    console.error("[onStartup Error]:", error);
-  }
+  console.log("[onStartup Called]");
+  await startUpEvent();
 });
 
 // helper function checks for day to store times
@@ -627,6 +636,12 @@ async function commitTime(now, start, url) {
     const delta = (now - start) / 1000;
     if (delta <= 0 || isNaN(delta)) return;
 
+    const { startTime: currentStoredStartTime } = await chrome.storage.local.get("startTime");
+    if (currentStoredStartTime !== start) {
+      console.log("[commitTime] Aborting: Race condition detected. Time already committed by another process.");
+      return;
+    }
+
     const currDay = new Date().getDay();
     await chrome.storage.local.set({ currentDay: currDay });
 
@@ -661,7 +676,8 @@ async function commitTime(now, start, url) {
 
       if (active) {
         const newMaxTime = Math.max(0, tmpMaxTime - delta);
-        await chrome.storage.local.set({ tmpMaxTime: newMaxTime, showAction: newMaxTime <= 0 });
+        const shouldShowAction = newMaxTime <= 0;
+        await chrome.storage.local.set({ tmpMaxTime: newMaxTime, showAction: shouldShowAction });
         console.log("[Timer Active] Remaining Time:", newMaxTime);
         if (shouldShowAction) {
           await handleRedirect(url);
@@ -681,6 +697,29 @@ async function commitTime(now, start, url) {
   } catch (error) {
     console.error("[commitTime Error]:", error);
   }
+}
+
+// debounce to prevent rapid syncSession calls
+let syncSessionPending = false;
+let syncSessionTimeout = null;
+
+async function debouncedSyncSession(tabUrl, reason) {
+  // Clear any pending timeout
+  if (syncSessionTimeout) {
+    clearTimeout(syncSessionTimeout);
+  }
+
+  // Set a short debounce (100ms) to batch rapid calls
+  syncSessionTimeout = setTimeout(async () => {
+    if (!syncSessionPending) {
+      syncSessionPending = true;
+      try {
+        await syncSession(tabUrl, reason);
+      } finally {
+        syncSessionPending = false;
+      }
+    }
+  }, 100);
 }
 
 async function syncSession(tabUrl, reason) {
@@ -705,8 +744,8 @@ async function syncSession(tabUrl, reason) {
 
     // if site and start time already exists remove it and start a new session
     if (currentSite && startTime) {
-      await chrome.storage.local.remove(["currentSite", "startTime"]);
       await commitTime(now, startTime, currentSite);
+      await chrome.storage.local.remove(["currentSite", "startTime"]);
       console.log(`[Timer] Committing time for previous path: ${currentSite}`);
     }
 
@@ -726,6 +765,7 @@ async function syncSession(tabUrl, reason) {
   }
 }
 
+let lastPatterns = null;
 // updates the content scripts with blocked sites as matches
 async function updateContentScript() {
   try {
@@ -738,6 +778,13 @@ async function updateContentScript() {
       const domain = site.text.replace(/^https?:\/\//, "").replace(/^www\./, "");
       return `*://*.${domain}/*`;
     });
+
+    const patternsString = JSON.stringify(patterns.sort());
+    if (patternsString === lastPatterns) {
+      console.log("Content script patterns unchanged, skipping update");
+      return;
+    }
+    lastPatterns = patternsString;
 
     // check for old scripts if they exists
     const oldScripts = await chrome.scripting.getRegisteredContentScripts();
@@ -763,12 +810,33 @@ async function updateContentScript() {
   }
 }
 
+async function returnIdleAfk() {
+  try {
+    const { pendingReturn, idleStart, afkReached } = await chrome.storage.local.get([
+      "pendingReturn",
+      "idleStart",
+      "afkReached",
+    ]);
+
+    if (pendingReturn || idleStart || afkReached) {
+      console.log("[URL Change] User returned from idle/AFK state");
+      await chrome.storage.local.set({ pendingReturn: false });
+      await chrome.storage.local.remove(["idleStart", "afkReached", "returnCheckTime"]);
+    }
+  } catch (error) {
+    console.error("[returnIdleAfk Error]:", error);
+  }
+}
+
 // use chrome.tabs.onActivated to listen for tab switches
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
-    if (tab.url) {
-      await syncSession(tab.url, "Tab Switch");
+    const window = await chrome.windows.get(activeInfo.windowId);
+
+    if (tab.url && window.focused) {
+      await returnIdleAfk();
+      await debouncedSyncSession(tab.url, "Tab Switch");
     }
   } catch (error) {
     console.error("[onActivated Error]:", error);
@@ -780,7 +848,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   try {
     // if internal url content has changed we handle time between change
     if (changeInfo.url) {
-      await syncSession(tab.url, "URL path change");
+      await returnIdleAfk();
+      await debouncedSyncSession(tab.url, "URL path change");
     }
   } catch (error) {
     console.error("[onUpdated Error]:", error);
@@ -851,7 +920,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
       return;
     } else {
       // We pass the latest changes directly to syncSession if possible,
-      await syncSession(tab.url, "Settings Toggle");
+      await syncSession(currTab.url, "Settings Toggle");
     }
   } catch (error) {
     console.error("[onChange Error]:", error);
@@ -869,6 +938,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
       // If the tab closed was the one we were tracking, save the time
       commitTime(now, startTime, currentSite);
       await chrome.storage.local.remove(["currentSite", "startTime"]);
+      await returnIdleAfk();
     }
   } catch (error) {
     console.error("[onRemove error]:", error);

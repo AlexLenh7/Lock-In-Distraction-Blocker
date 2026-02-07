@@ -155,7 +155,7 @@ export default function Dashboard() {
 
   return (
     <div className="w-full h-full flex justify-start flex-col">
-      <div className="flex w-full h-fit flex-col">
+      <div className="flex w-full h-full flex-col">
         {/* Toggle Buttons */}
         <div className="flex w-full h-fit flex-row">
           <div className="grid grid-cols-2 w-full">
@@ -267,6 +267,7 @@ export default function Dashboard() {
             </ul>
           </div>
         </div>
+
         {/* Insights and stats */}
         <div className="grid grid-cols-2 flex-row mt-2">
           <div className="flex text-text col-1 justify-center items-center flex-col">
@@ -308,10 +309,10 @@ export default function Dashboard() {
         </div>
         <button
           style={{ "--delay": `100ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger text-text flex w-full justify-center items-center cursor-pointer mt-2 p-1 transition-all duration-300 hover:bg-primary-dark border-2 border-primary-dark hover:border-primary"
+          className="animate-fade-up animate-stagger text-text tracking-wide flex w-full justify-center items-center cursor-pointer mt-2 p-1 transition-all duration-300 hover:bg-primary-dark border-2 border-primary-dark hover:border-primary"
           onClick={() => setShowInsights(true)}
         >
-          More Insights <PiMagnifyingGlassBold className="text-text size-4 ml-1" />
+          Learn more about your habits <PiMagnifyingGlassBold className="text-secondary size-4 ml-1" />
         </button>
       </div>
     </div>

@@ -89,3 +89,8 @@ export function formatTimeDifference(seconds: number) {
   const timeStr = parts.join(" ");
   return isNegative ? `-${timeStr}` : `+${timeStr}`;
 }
+
+export function sumObjectValues(obj: object) {
+  if (!obj || typeof obj !== "object") return 0;
+  return Object.values(obj).reduce((sum, time) => sum + time, 0);
+}

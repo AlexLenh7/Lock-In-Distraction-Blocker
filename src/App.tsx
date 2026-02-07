@@ -240,24 +240,25 @@ function App() {
           style={{ "--delay": `50ms` } as React.CSSProperties}
         >
           {currSite && checkValid && (
-            <button
-              className={`overflow-hidden border-2 text-text p-1 w-full border-bg-light flex items-center transition-all duration-300 justify-center`}
-              onClick={addCurr}
-            >
+            <div>
               {website.some((site) => site.text === currSite) ? (
-                <>
-                  <CgPlayListRemove className="size-4 mr-1" />
-                  <span className="flex justfiy-center">Site already added</span>
-                </>
+                <button
+                  onClick={addCurr}
+                  className={`overflow-hidden border-2 text-text w-full p-1 border-bg-light flex items-center transition-all duration-300 justify-center`}
+                >
+                  <CgPlayListRemove className="size-4 mr-1 shrink-0" />
+                  Site already added
+                </button>
               ) : (
-                <>
-                  <CgPlayListAdd className="size-4 mr-1" />
-                  <span className="flex justify-center truncate hover:border-secondary hover:bg-primary cursor-pointer">
-                    {currSite}?
-                  </span>
-                </>
+                <button
+                  onClick={addCurr}
+                  className={`overflow-hidden cursor-pointer w-full hover:border-secondary hover:bg-primary border-2 text-text p-1 border-bg-light flex items-center transition-all duration-300 justify-center`}
+                >
+                  <CgPlayListAdd className="size-4 mr-1 shrink-0" />
+                  <span className="truncate">{currSite}?</span>
+                </button>
               )}
-            </button>
+            </div>
           )}
           {!(currSite && checkValid) && (
             <div className="overflow-hidden border-2 text-text p-1 w-full border-bg-dark flex hover:border-bg-dark transition-all duration-300 justify-center">
@@ -332,7 +333,7 @@ function App() {
       <div className="w-full flex-1 min-h-0 overflow-hidden flex flex-col">{renderContent()}</div>
 
       {/* Footer content */}
-      <div className="grid grid-cols-2 w-full mt-4 shrink-0">
+      <div className="grid grid-cols-2 w-full mt-3 shrink-0">
         {!showTheme && (
           <div
             onClick={() => setShowTheme(true)}
@@ -384,11 +385,9 @@ function App() {
             </div>
             <div
               style={{ "--delay": `100ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger flex flex-1 flex-col items-center justify-between border-2 p-1 cursor-pointer transition-all duration-300 hover:border-primary border-primary-dark hover:bg-primary-dark"
+              className="animate-fade-up animate-stagger flex flex-1 border-2 p-1 cursor-pointer transition-all duration-300 border-primary-dark hover:border-primary hover:bg-primary-dark justify-center items-center text-text"
             >
-              <div className="flex text-text">
-                <SiKofi className="size-4 mr-1" /> Donate
-              </div>
+              <SiKofi className="size-4 mr-1" /> Donate
             </div>
           </div>
         </div>

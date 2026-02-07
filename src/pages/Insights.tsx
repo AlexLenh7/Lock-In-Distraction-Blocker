@@ -40,6 +40,16 @@ export default function Insights() {
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const Days = [
+    { id: 1, short: "Sun", name: "Sunday" },
+    { id: 2, short: "Mon", name: "Monday" },
+    { id: 3, short: "Tue", name: "Tuesday" },
+    { id: 4, short: "Wed", name: "Wednesday" },
+    { id: 5, short: "Thu", name: "Thursday" },
+    { id: 6, short: "Fri", name: "Friday" },
+    { id: 7, short: "Sat", name: "Saturday" },
+  ];
+
   useEffect(() => {
     const loadInsights = async () => {
       try {
@@ -212,12 +222,12 @@ export default function Insights() {
 
     // Basically no distractions
     if (bestDayBlockedTime < 300) {
-      return `Your were truly locked in on ${bestDay}! Keep it up, you got this!`;
+      return `Your were truly locked in on ${Days.find((i) => i.name === bestDay)?.short}! Keep it up, you got this!`;
     }
 
     // Large gap between best and worst
     if (worstDayBlockedTime - bestDayBlockedTime > 3600) {
-      return `${diff}% difference between ${bestDay} & ${worstDay}. Consistency is key!`;
+      return `${diff}% difference between ${Days.find((i) => i.name === bestDay)?.short} & ${Days.find((i) => i.name === worstDay)?.short}. Consistency is key!`;
     }
 
     // Small gap good consistency

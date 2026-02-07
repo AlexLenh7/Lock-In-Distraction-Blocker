@@ -187,11 +187,21 @@ export default function Settings() {
             </button>
           </div>
         </div> */}
-        <div className="text-text w-full flex justify-center font-semibold tracking-wide uppercase items-center">
-          <MdBlock className="size-4 mr-1" />
-          Block Settings
+        <div className="w-full flex-col flex justify-center mb-3">
+          <div
+            style={{ "--delay": `50ms` } as React.CSSProperties}
+            className="animate-fade-up animate-stagger text-text font-semibold tracking-wide uppercase items-center flex justify-center"
+          >
+            <MdBlock className="size-4 mr-1" />
+            Block Settings
+          </div>
+          <div
+            style={{ "--delay": `100ms` } as React.CSSProperties}
+            className="animate-fade-up animate-stagger text-sub-text text-xs flex justify-center"
+          >
+            Configure your websites to stay locked in
+          </div>
         </div>
-        <div className="text-sub-text text-xs mb-4 flex justify-center">Configure your websites to stay locked in</div>
         <div
           style={{ "--delay": `50ms` } as React.CSSProperties}
           className={`animate-fade-up animate-stagger grid grid-cols-3 w-full border-2 border-bg-light justify-center transition-all duration-300 ${active ? "border-primary" : "border-bg-light"}`}

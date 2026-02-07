@@ -67,6 +67,7 @@ export default function Websites({ website, setWebsite }: Props) {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
+      <div className="w-full flex justify-center text-sub-text mb-1">View, add, and delete your websites</div>
       {/* Input field */}
       <div className="border-bg-light border-2 animate-fade-in flex flex-col h-fit overflow-hidden">
         <div className="w-full flex flex-row gap-2 shrink-0">
@@ -97,7 +98,7 @@ export default function Websites({ website, setWebsite }: Props) {
                 type="text"
                 value={site.text}
                 onChange={(e) => updateRemove(site.id, e.target.value)}
-                className="w-full p-2 bg-transparent focus:outline-none"
+                className="w-full p-2 bg-transparent focus:outline-none truncate"
               />
             </span>
           ))}
