@@ -286,3 +286,64 @@ input::-webkit-inner-spin-button {
   --animate-shake-fade: shake-fade 2s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   --animate-fade: alert-fade 2s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
+
+@keyframes logo-spin {
+  0% {
+    transform: rotate(0deg) scale(0.5);
+    opacity: 0;
+  }
+  70% {
+    transform: rotate(360deg) scale(1.5);
+    opacity: 1;
+  }
+  85% {
+    transform: rotate(360deg) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes reveal-left {
+  0% {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  100% {
+    max-width: 1ch;
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-right {
+  0% {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    max-width: 10ch;
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-logo-spin {
+  animation: logo-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-reveal-l {
+  animation: reveal-left 0.5s ease-out 0.6s forwards;
+  max-width: 0;
+  opacity: 0;
+}
+
+.animate-reveal-r {
+  animation: reveal-right 0.5s ease-out 0.6s forwards;
+  max-width: 0;
+  opacity: 0;
+}

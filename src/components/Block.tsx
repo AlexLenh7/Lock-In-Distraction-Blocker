@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { IoClose } from "react-icons/io5";
+import { LockInLogo } from "./LockInLogo";
 
 interface BlockProp {
   onClose: () => void;
@@ -36,8 +37,9 @@ export default function Block({ onClose }: BlockProp) {
         {/* Content box */}
         <div className="p-8 flex justify-center flex-col">
           <div className="flex flex-row mb-4 justify-center">
-            <span className="text-4xl font-bold text-(--brand-text) justify-center items-center flex">
-              🔒 Lock Back In
+            <span className="text-4xl justify-center items-center flex">
+              <LockInLogo className="size-8 mr-2 text-(--brand-secondary)" />
+              <span className="font-bold text-(--brand-text)">Lock Back In</span>
             </span>
           </div>
           <p className="text-lg text-(--brand-sub-text) justify-center flex">
@@ -64,7 +66,8 @@ export default function Block({ onClose }: BlockProp) {
                 <span
                   className={`flex items-center justify-center ${isHolding ? "group-hover:text-(--brand-text)" : "group-hover:text-(--brand-secondary)"}`}
                 >
-                  <IoClose className="size-4 mr-1" />I understand and wish to continue
+                  <IoClose className="size-4 mr-1" />
+                  Close for this tab
                 </span>
               </button>
             </div>

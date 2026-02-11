@@ -11,6 +11,7 @@ import { SiKofi } from "react-icons/si";
 import { MdHelp } from "react-icons/md";
 import Typewriter from "typewriter-effect";
 import { IoMdColorPalette } from "react-icons/io";
+import { LockInLogo } from "./components/LockInLogo";
 
 function App() {
   const [activeTab, setActiveTab] = useState("Dashboard");
@@ -34,7 +35,7 @@ function App() {
     "Do what you can, with what you have, where you are",
     "Don't watch the clock; do what it does. Keep going",
     "Eliminate distractions",
-    "Support Lock In development by donating",
+    "Support future updates by donating",
   ];
 
   const genRandQuote = () => {
@@ -72,20 +73,13 @@ function App() {
 
   // Single loader to grab all data
   useEffect(() => {
-    // use a promise to ensure data loads before applying
     const loadData = async () => {
       try {
-        const data = await chrome.storage.sync.get({
-          globalSwitch: true,
-          website: [],
-          theme: "default-dark",
-        });
+        const { globalSwitch, website, theme } = await chrome.storage.sync.get(["globalSwitch", "website", "theme"]);
 
-        // document.documentElement.style.setProperty("--theme-hue", (data.theme as number).toString());
-
-        setGlobalSwitch(data.globalSwitch as boolean);
-        setWebsite(data.website as Website[]);
-        setTheme(data.theme as string);
+        setGlobalSwitch(globalSwitch as boolean);
+        setWebsite(website as Website[]);
+        setTheme(theme as string);
         setIsLoaded(true);
         genRandQuote();
       } catch (error) {
@@ -202,15 +196,28 @@ function App() {
     >
       <div className="relative w-full justify-center items-center flex flex-col">
         <h1 className="text-text w-full flex justify-center items-center text-2xl font-extrabold tracking-widest z-10 leading-none mb-1">
-          <Typewriter
+          {/* <Typewriter
             onInit={(typewriter) => {
-              typewriter.typeString("LOCK IN").pauseFor(1000).start();
+              typewriter
+                .typeString(`L${(<LockInLogo />)}CK IN`)
+                .pauseFor(1000)
+                .start();
             }}
             options={{
               skipAddStyles: true,
               cursor: ".",
             }}
-          />
+          /> */}
+          <div
+            style={{ "--delay": `50ms` } as React.CSSProperties}
+            className="flex justify-center items-center animate-stagger"
+          >
+            <span className="animate-reveal-l overflow-hidden whitespace-nowrap">L</span>
+            <div className="animate-logo-spin flex items-center justify-center mx-0.5 shrink-0">
+              <LockInLogo className="size-4.5" />
+            </div>
+            <span className="animate-reveal-r overflow-hidden whitespace-nowrap">CK IN</span>
+          </div>
         </h1>
         {/* <h1 className="absolute text-primary w-full flex justify-center text-2xl font-bold mb-4 tracking-widest translate-y-0.5 translate-x-0.5">
           LOCK IN.
@@ -221,9 +228,10 @@ function App() {
               "
               <Typewriter
                 onInit={(typewriter) => {
-                  typewriter.typeString(`${quote}`).pauseFor(1000).start();
+                  typewriter.typeString(`${quote}`).start();
                 }}
                 options={{
+                  delay: 75,
                   skipAddStyles: true,
                   cursor: `.`,
                 }}
@@ -383,12 +391,14 @@ function App() {
             >
               <MdHelp className="size-4 mr-1" /> Help
             </div>
-            <div
+            <a
+              href="https://ko-fi.com/alexprograms"
+              target="_blank"
               style={{ "--delay": `100ms` } as React.CSSProperties}
               className="animate-fade-up animate-stagger flex flex-1 border-2 p-1 cursor-pointer transition-all duration-300 border-primary-dark hover:border-primary hover:bg-primary-dark justify-center items-center text-text"
             >
               <SiKofi className="size-4 mr-1" /> Donate
-            </div>
+            </a>
           </div>
         </div>
       </div>

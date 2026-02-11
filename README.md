@@ -1,6 +1,20 @@
-# 🔒 Lock In - Distraction Blocker
+# Lock In - Distraction Manager
 
-A powerful Chrome extension designed to help you stay focused by tracking and limiting time spent on distracting websites. Monitor your productivity, set daily limits, and build better browsing habits.
+<a href="" target="_blank">
+    <img src="./src/assets/LockInThumbnail.jpg" alt="Lock In Thumbnail" width="100%" />
+</a>
+<div class="center"> 
+  <img alt="Status Deployed" src="https://img.shields.io/badge/Status-Deployed-26c73c?logo=rocket&logoColor=fff" />
+  <img alt="Version 1.0" src="https://img.shields.io/badge/Version-1.0-white?logo=google-chrome&logoColor=4285F4" />
+  <img alt="Chrome web store" src="https://img.shields.io/badge/Chrome_Web_Store-4285F4?logo=chromewebstore&logoColor=white"/>
+  <img alt="React" src="https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB" />
+  <img alt="Typescript" src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=fff" />
+  <img alt="npm" src="https://img.shields.io/badge/npm-CB3837?logo=npm&logoColor=fff" />
+  <img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-FF5E5B?logo=ko-fi&logoColor=white"/>
+  <img alt="Github Stars" src="https://img.shields.io/github/stars/AlexLenh7/Lock-In-Distraction-Blocker">
+</div>
+
+Lock In is a powerful and easy to use Chrome extension designed to help you stay focused by tracking and limiting time spent on problematic websites. Monitor your productivity, set daily limits, and build better browsing habits.
 
 ---
 
@@ -391,7 +405,7 @@ If you have an issue or your an experienced developer here is how you can make c
 
 If Lock In helps you stay focused, consider:
 
-- Donating, anything is appreciated!
+- <a href="https://ko-fi.com/alexprograms" target="_blank">Donating</a>, anything is appreciated!
 - ⭐ Starring the project on GitHub
 - 📝 Leaving a review on the Chrome Web Store
 - 🐛 Reporting bugs to help improve the extension

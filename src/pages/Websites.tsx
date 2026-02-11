@@ -69,7 +69,7 @@ export default function Websites({ website, setWebsite }: Props) {
     <div className="w-full h-full flex flex-col overflow-hidden">
       <div
         style={{ "--delay": `50ms` } as React.CSSProperties}
-        className="animate-fade-up animate-stagger w-full flex justify-center text-sub-text mb-1"
+        className="animate-fade-up animate-stagger w-full flex justify-center text-sub-text mb-3"
       >
         View, add, and delete your websites
       </div>
@@ -93,9 +93,7 @@ export default function Websites({ website, setWebsite }: Props) {
 
         {/* List of websites */}
         <div className="overflow-y-auto divide-y-2 divide-bg-light h-full">
-          {website.length === 0 && (
-            <p className="flex justify-center w-full text-text text-lg font-bold mt-4">No websites yet</p>
-          )}
+          {website.length === 0 && <></>}
           {website.map((site, index) => (
             <span
               style={{ "--delay": `${index * 50}ms` } as React.CSSProperties}

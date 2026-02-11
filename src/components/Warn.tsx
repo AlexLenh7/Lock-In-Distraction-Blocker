@@ -1,4 +1,5 @@
 import { IoClose } from "react-icons/io5";
+import { LockInLogo } from "./LockInLogo";
 
 interface WarnProp {
   onClose: () => void;
@@ -14,8 +15,9 @@ export default function Warn({ onClose }: WarnProp) {
         </span>
         <div className="p-8 flex justify-center flex-col">
           <div className="flex flex-row mb-4 justify-center">
-            <span className="text-4xl font-Lexend font-bold text-(--brand-text) justify-center items-center flex">
-              ⚠️ Warning to Lock In
+            <span className="text-4xl font-bold text-(--brand-text) justify-center items-center flex leading-tight">
+              <LockInLogo className="size-8 mr-2 text-(--brand-secondary)" />
+              <span className="font-bold text-(--brand-text)">Warning to Lock In</span>
             </span>
           </div>
           <p className="text-lg text-(--brand-sub-text) justify-center flex">
@@ -30,7 +32,7 @@ export default function Warn({ onClose }: WarnProp) {
               className="text-xs flex flex-row justify-center items-center text-(--brand-sub-text) hover:text-(--brand-secondary) cursor-pointer transition-all duration-300"
             >
               <IoClose className="size-4 mr-1" />
-              <span className="flex items-center justify-center">I understand and wish to continue</span>
+              <span className="flex items-center justify-center">Close for this tab</span>
             </button>
           </div>
         </div>

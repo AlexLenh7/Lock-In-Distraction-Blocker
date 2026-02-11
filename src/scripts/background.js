@@ -357,7 +357,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       if (pendingReturn === true && returnCheckTime) {
         const rawTime = (Date.now() - returnCheckTime) / 1000;
         //const activeDuration = Math.min(30, Math.floor(rawTime));
-        const activeDuration = Math.round(rawTime);
+        let activeDuration = Math.round(rawTime);
         if (activeDuration <= 2) activeDuration = 0;
         else if (activeDuration >= 28) activeDuration = 30;
         // const isUserBack = Math.abs(activeDuration - 30) > 1 && activeDuration !== 0;
@@ -439,8 +439,23 @@ async function startUpEvent() {
   }
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   console.log("[onInstalled Called]");
+  if (details.reason === "install") {
+    await chrome.storage.sync.set({
+      globalSwitch: true,
+      active: false,
+      maxTime: 0,
+      action: "Disabled",
+      afkTime: 600,
+      afkActive: true,
+      redirect: "",
+      nuke: false,
+      website: [],
+      theme: "default-dark",
+      timerPause: false,
+    });
+  }
   await startUpEvent();
 });
 
@@ -592,7 +607,7 @@ async function commitTime(now, start, url) {
         "tmpMaxTime",
         "showAction",
       ]),
-      chrome.storage.sync.get(["active", "maxTime"]),
+      chrome.storage.sync.get(["active", "maxTime", "timerPause"]),
     ]);
 
     const updateData = {};
@@ -621,6 +636,7 @@ async function commitTime(now, start, url) {
       // TIMER ONLY CHANGES
       const active = syncData.active;
       let tmpMaxTime = localData.tmpMaxTime;
+      const timerPause = syncData.timerPause || false;
 
       // Saftey check if tmpMaxTime is missing
       if (active && (tmpMaxTime === undefined || tmpMaxTime === null)) {
@@ -628,7 +644,7 @@ async function commitTime(now, start, url) {
         console.log("[Timer] tmpMaxTime missing. Seeding:", tmpMaxTime);
       }
 
-      if (active) {
+      if (active && !timerPause) {
         const newMaxTime = Math.max(0, tmpMaxTime - delta);
         const shouldShowAction = newMaxTime <= 0;
         updateData.tmpMaxTime = newMaxTime;
@@ -680,7 +696,7 @@ async function syncSession(tabUrl, reason) {
     const { currentSite, startTime, tmpMaxTime } = localData;
 
     // If the extension is OFF, stop everything immediately.
-    if (globalSwitch === false || globalSwitch === undefined || active === undefined) {
+    if (globalSwitch === false || globalSwitch === undefined) {
       console.log("[Guard] Extension is Disabled. Allowing all traffic.");
       return;
     }
@@ -803,7 +819,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
     if (namespace !== "sync") return;
     console.log("[Settings] Change detected:", Object.keys(changes));
 
-    if (changes.maxTime) {
+    if (changes.maxTime && !changes.tmpMaxTime) {
       const newMaxTime = changes.maxTime.newValue;
       await chrome.storage.local.set({ tmpMaxTime: newMaxTime, showAction: false });
       console.log("[Settings] maxTime changed. Reseeded tmpMaxTime to:", newMaxTime);
@@ -818,7 +834,10 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
     // handles timer and global switches to stop the clock immediately
     const globalOff = changes.globalSwitch && changes.globalSwitch.newValue === false;
     const timerOff = changes.active && changes.active.newValue === false;
+    const globalOn = changes.globalSwitch && changes.globalSwitch.newValue === true;
+    const timerOn = changes.active && changes.active.newValue === true;
 
+    // handles global switch off
     if (globalOff || timerOff) {
       console.log("[Cleanup] User disabled extension/timer. Stopping session.");
 
@@ -828,8 +847,18 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
       if (startTime && currentSite) {
         await chrome.storage.local.remove(["currentSite", "startTime"]);
         const now = Date.now();
-        commitTime(now, startTime, currentSite);
+        await commitTime(now, startTime, currentSite);
       }
+    }
+
+    // handle global switch on
+    if (globalOn || timerOn) {
+      console.log("[Cleanup] User enabled extension/timer. start session.");
+      const [currTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (currTab?.url) {
+        await syncSession(currTab.url, "Settings Re-enabled");
+      }
+      return;
     }
 
     // if website list changes in storage
@@ -857,9 +886,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
     // evaluate the current tab based on new settings regardless
     const [currTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    if (isValid(currTab.url)) {
-      return;
-    } else {
+    if (currTab?.url && (await isValid(currTab.url))) {
       // We pass the latest changes directly to syncSession if possible,
       await syncSession(currTab.url, "Settings Toggle");
     }

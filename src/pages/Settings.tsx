@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { checkBlock } from "../utils/Helpers";
 import { isValidSyntax } from "../utils/Helpers";
-import { MdBlock } from "react-icons/md";
+import { MdOutlineTimelapse } from "react-icons/md";
+import { TiWarningOutline } from "react-icons/ti";
+import { RiRestTimeLine } from "react-icons/ri";
+import { IoMdPause } from "react-icons/io";
+import { IoMdPlay } from "react-icons/io";
+import { PiArrowsCounterClockwiseBold } from "react-icons/pi";
 
 export default function Settings() {
   const buttonStates = [
     { id: 1, state: "Redirect", description: "Redirects to a chosen site" },
     { id: 2, state: "Block", description: "Blocks content viewing" },
-    { id: 3, state: "Warn", description: "Notifies when your time is up" },
+    { id: 3, state: "Warn", description: "Unobstructive warning when your time is up" },
     { id: 4, state: "Disabled", description: "Website action is disabled" },
   ];
 
@@ -22,6 +27,8 @@ export default function Settings() {
   const [isAlert, setAlert] = useState<string>("");
   const [savedRedirect, setSavedRedirect] = useState<string>("");
   const [nuke, setNuke] = useState(false);
+  const [showTimer, setShowTimer] = useState<number>(0);
+  const [timerPause, setTimerPause] = useState(false);
 
   function convertTime(totalSec: number) {
     const hour = Math.floor(totalSec / 3600);
@@ -32,23 +39,32 @@ export default function Settings() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { maxTime, action, active, afkTime, afkActive, redirect, nuke } = await chrome.storage.sync.get([
-          "maxTime",
-          "action",
-          "active",
-          "afkTime",
-          "afkActive",
-          "redirect",
-          "nuke",
+        const [syncData, localData] = await Promise.all([
+          chrome.storage.sync.get([
+            "maxTime",
+            "action",
+            "active",
+            "afkTime",
+            "afkActive",
+            "redirect",
+            "nuke",
+            "timerPause",
+          ]),
+          chrome.storage.local.get(["tmpMaxTime"]),
         ]);
 
+        const { maxTime, action, active, afkTime, afkActive, redirect, nuke, timerPause } = syncData;
+        const { tmpMaxTime } = localData;
+
         // grab button states and update ui
-        setAction(action as string);
-        setActive(active as boolean);
-        setAfkActive(afkActive as boolean);
-        setRedirect(redirect as string);
-        setSavedRedirect(redirect as string);
-        setNuke(nuke as boolean);
+        setAction((action as string) || "Disabled");
+        setActive((active as boolean) || false);
+        setAfkActive((afkActive as boolean) || false);
+        setRedirect((redirect as string) || "");
+        setSavedRedirect((redirect as string) || "");
+        setNuke((nuke as boolean) || false);
+        setShowTimer((tmpMaxTime as number) || 0);
+        setTimerPause((timerPause as boolean) || false);
 
         const { min: afkMin } = convertTime(afkTime as number);
         setAfkTimer({ minutes: afkMin });
@@ -61,7 +77,35 @@ export default function Settings() {
       }
     };
     loadData();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleStorageChange = (changes: any, namespace: string) => {
+      if (namespace === "local" && changes.tmpMaxTime) {
+        const newValue = changes.tmpMaxTime.newValue;
+        if (newValue !== undefined) {
+          setShowTimer(newValue);
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, []);
+
+  const handleReset = () => {
+    // Grab the time from maxTime
+    const totalSeconds = time.hours * 3600 + time.minutes * 60;
+    setShowTimer(totalSeconds);
+    chrome.storage.local.set({ tmpMaxTime: totalSeconds, showAction: false });
+  };
+
+  const formatTimer = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h.toString()} hour : ${m.toString()} min`;
+  };
 
   // Helper func visual time update
   const saveTime = (h: number, m: number) => {
@@ -101,6 +145,13 @@ export default function Settings() {
   const updateNuke = (shouldNuke: boolean) => {
     const newVal = !shouldNuke;
     setNuke(newVal);
+    return newVal;
+  };
+
+  // helper function to update timer pause setting
+  const updateTimerPause = (currentPause: boolean) => {
+    const newVal = !currentPause;
+    setTimerPause(newVal);
     return newVal;
   };
 
@@ -187,23 +238,24 @@ export default function Settings() {
             </button>
           </div>
         </div> */}
-        <div className="w-full flex-col flex justify-center mb-3">
+        {/* <div className="w-full flex-col flex justify-center mb-3">
           <div
             style={{ "--delay": `50ms` } as React.CSSProperties}
-            className="animate-fade-up animate-stagger text-text font-semibold tracking-wide uppercase items-center flex justify-center"
-          >
-            <MdBlock className="size-4 mr-1" />
-            Block Settings
-          </div>
-          <div
-            style={{ "--delay": `100ms` } as React.CSSProperties}
             className="animate-fade-up animate-stagger text-sub-text text-xs flex justify-center"
           >
             Configure your websites to stay locked in
           </div>
+        </div> */}
+        {/* Daily Maximum Time Setting */}
+        <div style={{ "--delay": `50ms` } as React.CSSProperties} className="animate-fade-up animate-stagger">
+          <span className="text-text flex justify-center items-center uppercase tracking-wide">
+            <MdOutlineTimelapse className="size-4 mr-1" />
+            Time Limit
+          </span>
+          <p className="flex justify-center mb-1 text-sub-text leading-tight">Maximum time allowed (Resets daily)</p>
         </div>
         <div
-          style={{ "--delay": `50ms` } as React.CSSProperties}
+          style={{ "--delay": `100ms` } as React.CSSProperties}
           className={`animate-fade-up animate-stagger grid grid-cols-3 w-full border-2 border-bg-light justify-center transition-all duration-300 ${active ? "border-primary" : "border-bg-light"}`}
         >
           {/* Hours Column */}
@@ -259,12 +311,60 @@ export default function Settings() {
             {active ? "Enabled" : "Disabled"}
           </button>
         </div>
-        <p
-          style={{ "--delay": `100ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex justify-center mb-2 text-sub-text"
-        >
-          Daily maximum time allowed
-        </p>
+        {/* View timer */}
+        {active && (
+          <div style={{ "--delay": `100ms` } as React.CSSProperties} className="animate-stagger animate-fade-up">
+            <div className="grid grid-cols-3 items-center p-2 bg-bg-dark mt-3 border-2 border-bg-light">
+              {/* Col 1: Label */}
+              <div className="col-span-1 text-text leading-tight flex justify-center">Current Session</div>
+
+              {/* Col 2: Digital Clock */}
+              <div className="col-span-1 flex justify-center items-center text-text font-bold tracking-wide">
+                {formatTimer(showTimer)}
+              </div>
+
+              {/* Col 3: Buttons */}
+              <div className="col-span-1 grid grid-cols-2 gap-1 h-full">
+                <button
+                  onClick={() => chrome.storage.sync.set({ timerPause: updateTimerPause(timerPause as boolean) })}
+                  className={`relative group flex justify-center items-center cursor-pointer transition-all duration-300 border-2 ${
+                    timerPause
+                      ? "border-primary bg-primary-dark text-text"
+                      : "border-bg-light text-sub-text hover:bg-primary-dark hover:text-text"
+                  }`}
+                >
+                  {timerPause ? <IoMdPlay /> : <IoMdPause />}
+                  <div className="absolute left-1/2 -translate-x-1/2 leading-tight top-full mt-1 p-1 text-xs w-fit text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
+                    {timerPause ? "Resume" : "Pause"}
+                  </div>
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="relative group p-1 flex justify-center items-center cursor-pointer transition-all duration-300 border-2 border-bg-light text-sub-text hover:bg-primary-dark hover:text-text"
+                >
+                  <PiArrowsCounterClockwiseBold />
+                  <div className="absolute left-1/2 -translate-x-1/2 leading-tight top-full mt-1 p-1 text-xs w-fit text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
+                    Reset
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Website Action Settings */}
+        <div style={{ "--delay": `50ms` } as React.CSSProperties} className="animate-fade-up animate-stagger">
+          <span className="flex text-text justify-center items-center mt-3 uppercase tracking-wide">
+            <TiWarningOutline className="size-4 mr-1" />
+            Website Actions
+          </span>
+          {buttonStates.map((b) => (
+            <p
+              className={`flex justify-center items-center mb-1 leading-tight ${action === b.state ? "text-sub-text" : "hidden"}`}
+            >
+              {b.description}
+            </p>
+          ))}
+        </div>
         <div
           style={{ "--delay": `50ms` } as React.CSSProperties}
           className={`animate-fade-up animate-stagger relative grid grid-cols-4 items-center w-full border-2 transition-all duration-300 ease-in-out ${action === "Disabled" ? "border-bg-light" : "border-primary"} bg-transparent overflow-hidden`}
@@ -287,41 +387,29 @@ export default function Settings() {
             </button>
           ))}
         </div>
-        <div>
-          {buttonStates.map((b) => (
-            <p
-              style={{ "--delay": `100ms` } as React.CSSProperties}
-              className={`animate-fade-up animate-stagger flex justify-center items-center mb-2 ${action === b.state ? "text-sub-text" : "hidden"}`}
-            >
-              {b.description}
-            </p>
-          ))}
-        </div>
         {/* Redirect setting */}
         {action === "Redirect" && (
-          <div>
-            <input
-              style={{ "--delay": `50ms` } as React.CSSProperties}
-              className={`animate-fade-up text-center animate-stagger focus:border-primary focus:bg-primary-dark focus:hover:bg-primary-dark text-text w-full flex border-2 p-1 mt-2 transition-all duration-300 hover:bg-primary-dark outline-none ${redirect.length > 0 ? `border-primary` : `border-bg-light`} truncate`}
-              type="text"
-              value={redirect}
-              placeholder="Enter a site to be redirected"
-              onChange={(e) => setRedirect(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleKeyDown()}
-              onBlur={handleBlur}
-            />
-            <span
-              style={{ "--delay": `100ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger flex justify-center mb-2 text-sub-text"
-            >
-              Enter a valid website to redirect
-            </span>
+          <div style={{ "--delay": `100ms` } as React.CSSProperties} className="animate-stagger animate-fade-up">
+            <div className="bg-bg-dark mt-3 p-2 border-2 border-bg-light">
+              <input
+                className={`text-center focus:border-primary focus:bg-primary-dark focus:hover:bg-primary-dark text-text w-full flex border-2 p-1 transition-all duration-300 hover:bg-primary-dark outline-none ${redirect.length > 0 ? `border-primary` : `border-bg-light`} truncate`}
+                type="text"
+                value={redirect}
+                placeholder="Enter a site to be redirected"
+                onChange={(e) => setRedirect(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleKeyDown()}
+                onBlur={handleBlur}
+              />
+              {/* <span className="flex justify-center text-sub-text text-[10px] leading-tight">
+                Enter a valid website to redirect
+              </span> */}
+            </div>
           </div>
         )}
         {/* Block options */}
         {action === "Block" && (
-          <div style={{ "--delay": `50ms` } as React.CSSProperties} className="animate-stagger animate-fade-up">
-            <div className="col-2 grid grid-cols-2 p-2 bg-bg-dark">
+          <div style={{ "--delay": `100ms` } as React.CSSProperties} className="animate-stagger animate-fade-up">
+            <div className="col-2 grid grid-cols-2 p-2 bg-bg-dark mt-3 border-2 border-bg-light">
               <div className="col-1 w-full flex flex-col">
                 <span className="flex items-center justify-start text-text leading-tight">Instant Purge</span>
                 <span className="text-sub-text text-[10px] leading-tight">Tabs will be instantly deleted</span>
@@ -354,16 +442,25 @@ export default function Settings() {
               </div>
             </div>
 
-            <span
+            {/* <span
               style={{ "--delay": `100ms` } as React.CSSProperties}
               className="animate-fade-up animate-stagger flex justify-center mb-2 text-sub-text"
             >
               Optional settings for Block
-            </span>
+            </span> */}
           </div>
         )}
+        <div style={{ "--delay": `50ms` } as React.CSSProperties} className="animate-fade-up animate-stagger">
+          <span className="text-text flex justify-center items-center uppercase tracking-wide mt-3">
+            <RiRestTimeLine className="size-4 mr-1" />
+            AFK Detection
+          </span>
+          <span className=" flex justify-center text-sub-text leading-tight mb-1">
+            Total time of inactivity before tracking stops
+          </span>
+        </div>
         <div
-          style={{ "--delay": `50ms` } as React.CSSProperties}
+          style={{ "--delay": `100ms` } as React.CSSProperties}
           className={`animate-fade-up animate-stagger grid grid-cols-2 w-full border-2 justify-center transition-all duration-300 ${afkActive ? "border-primary" : "border-bg-light"}`}
         >
           {/* AFK Minutes Input */}
@@ -396,12 +493,6 @@ export default function Settings() {
             {afkActive ? "Enabled" : "Disabled"}
           </button>
         </div>
-        <span
-          style={{ "--delay": `100ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex justify-center text-sub-text"
-        >
-          Total time of inactivity before AFK state
-        </span>
       </div>
       {isAlert && (
         <div
