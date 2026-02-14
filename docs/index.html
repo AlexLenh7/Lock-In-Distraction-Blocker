@@ -101,15 +101,20 @@
                 >FAQ</a
               >
               <a
+                href="#contact"
+                class="hover:text-brand-primary transition-colors duration-300 px-3 py-2 rounded-md text-sm font-medium"
+                >Contact</a
+              >
+              <a
                 href="https://ko-fi.com/alexprograms"
                 target="_blank"
-                class="hover:bg-[#be2b29] border-2 border-[#FF5E5B] transition-colors duration-300 px-3 py-2 rounded-md text-sm font-bold"
+                class="hover:bg-brand-secondary border-2 border-brand-secondary transition-colors duration-300 px-3 py-2 rounded-md text-sm font-bold"
                 >Donate!</a
               >
               <a
                 href="https://github.com/AlexLenh7/Lock-In-Distraction-Blocker"
                 target="_blank"
-                class="hover:bg-brand-primaryDark border-2 border-brand-primary text-brand-text px-4 py-2 rounded-md text-sm font-bold transition-all duration-300"
+                class="hover:bg-brand-primary border-2 border-brand-primary text-brand-text px-4 py-2 rounded-md text-sm font-bold transition-all duration-300"
               >
                 GitHub
               </a>
@@ -197,9 +202,19 @@
       </div>
     </section>
 
-    <section id="faq" class="py-20 bg-brand-bgDark">
-      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold mb-10 text-center">Frequently Asked Questions</h2>
+    <section id="faq" class="pt-20 bg-brand-bgDark">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold mb-10 flex items-center justify-center gap-2">
+          <svg class="w-8 h-8 text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          Frequently Asked Questions
+        </h2>
 
         <div class="space-y-4">
           <details
@@ -341,6 +356,110 @@
       </div>
     </section>
 
+    <section id="contact" class="py-20 bg-brand-bgDark">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
+          <svg class="w-8 h-8 text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"
+            ></path>
+          </svg>
+          Contact
+        </h2>
+        <p class="text-brand-sub mb-12 text-center">
+          Have an issue not listed in the FAQ? Reach out through any of the options below.
+        </p>
+
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- Email -->
+          <a
+            href="mailto:lockinsupport@gmail.com"
+            class="group bg-brand-bgLight p-6 rounded-lg border-2 border-brand-bgLight hover:border-brand-primary transition-all duration-300 flex flex-col items-center text-center gap-3"
+          >
+            <div
+              class="w-12 h-12 rounded-full bg-brand-bgDark flex items-center justify-center group-hover:bg-brand-primary transition-colors duration-300"
+            >
+              <svg
+                class="w-6 h-6 text-brand-primary group-hover:text-white transition-colors duration-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                ></path>
+              </svg>
+            </div>
+            <div class="font-bold text-brand-text">Email</div>
+            <p class="text-brand-sub text-sm">Send a message directly for any questions or bug reports.</p>
+            <span class="text-brand-primary text-sm font-semibold mt-auto">Send an email →</span>
+          </a>
+
+          <!-- GitHub Issues -->
+          <a
+            href="https://github.com/AlexLenh7/Lock-In-Distraction-Blocker/issues"
+            target="_blank"
+            class="group bg-brand-bgLight p-6 rounded-lg border-2 border-brand-bgLight hover:border-brand-primary transition-all duration-300 flex flex-col items-center text-center gap-3"
+          >
+            <div
+              class="w-12 h-12 rounded-full bg-brand-bgDark flex items-center justify-center group-hover:bg-brand-primary transition-colors duration-300"
+            >
+              <svg
+                class="w-6 h-6 text-brand-primary group-hover:text-white transition-colors duration-300"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                ></path>
+              </svg>
+            </div>
+            <div class="font-bold text-brand-text">GitHub Issues</div>
+            <p class="text-brand-sub text-sm">Open an issue for bugs, feature requests, or anything technical.</p>
+            <span class="text-brand-primary text-sm font-semibold mt-auto">Open an issue →</span>
+          </a>
+
+          <!-- Chrome Store Review -->
+          <a
+            href="#"
+            target="_blank"
+            class="group bg-brand-bgLight p-6 rounded-lg border-2 border-brand-bgLight hover:border-brand-primary transition-all duration-300 flex flex-col items-center text-center gap-3"
+          >
+            <div
+              class="w-12 h-12 rounded-full bg-brand-bgDark flex items-center justify-center group-hover:bg-brand-primary transition-colors duration-300"
+            >
+              <svg
+                class="w-6 h-6 text-brand-primary group-hover:text-white transition-colors duration-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                ></path>
+              </svg>
+            </div>
+            <div class="font-bold text-brand-text">Leave a Review</div>
+            <p class="text-brand-sub text-sm">
+              Enjoying the extension? A review on the Chrome Web Store goes a long way.
+            </p>
+            <span class="text-brand-primary text-sm font-semibold mt-auto">Write a review →</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
     <section class="pt-16 pb-8 border-t border-brand-bgLight">
       <div class="max-w-4xl mx-auto px-4 text-center">
         <h2 class="text-2xl font-bold mb-4">Enjoying Lock In?</h2>
@@ -352,7 +471,7 @@
           <a
             href="https://ko-fi.com/alexprograms"
             target="_blank"
-            class="flex items-center gap-2 bg-[#FF5E5B] hover:bg-[#ff4642] text-white font-bold py-3 px-6 rounded-full transition-transform hover:-translate-y-1 shadow-lg shadow-[#FF5E5B]/20"
+            class="flex items-center gap-2 bg-brand-secondary hover:bg-yellow-500 text-white font-bold py-3 px-6 rounded-full transition-transform hover:-translate-y-1"
           >
             <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi logo" class="w-6 h-6" />
             <span>Support by donating!</span>

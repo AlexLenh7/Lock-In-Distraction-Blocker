@@ -367,12 +367,14 @@ function App() {
 
         <div className="col-span-full mt-2">
           <div className="flex flex-row gap-2">
-            <div
+            <a
+              href="https://alexlenh7.github.io/Lock-In-Distraction-Blocker/"
+              target="_blank"
               style={{ "--delay": `50ms` } as React.CSSProperties}
               className="animate-fade-up animate-stagger flex flex-1 border-2 p-1 cursor-pointer transition-all duration-300 border-primary-dark hover:border-primary hover:bg-primary-dark justify-center items-center text-text"
             >
               <MdHelp className="size-4 mr-1" /> Help
-            </div>
+            </a>
             <a
               href="https://ko-fi.com/alexprograms"
               target="_blank"
