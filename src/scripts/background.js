@@ -331,7 +331,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
     if (alarm.name === "alarm") {
       log("[Alarm] 30 seconds passed...");
-      await checkDay();
       const { currentSite, startTime, afkReached, idleStart } = await chrome.storage.local.get([
         "currentSite",
         "startTime",
@@ -343,6 +342,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       if (currTab.url === currentSite && startTime && !afkReached && !idleStart) {
         const now = Date.now();
         await commitTime(now, startTime, currentSite);
+        // call checkDay after to avoid commiting stale data
+        await checkDay();
         await chrome.storage.local.set({ startTime: now });
       }
     } else if (alarm.name === "AFKalarm") {
@@ -471,19 +472,7 @@ async function checkDay() {
   try {
     const today = new Date().getDay();
 
-    const [localData, syncData] = await Promise.all([
-      chrome.storage.local.get([
-        "currentDay",
-        "globalWebsiteTime",
-        "totalWebsiteTime",
-        "storeGlobalDay",
-        "storeBlockDay",
-        "tmpMaxTime",
-      ]),
-      chrome.storage.sync.get(["active", "maxTime"]),
-    ]);
-    const { currentDay, globalWebsiteTime, totalWebsiteTime, storeGlobalDay, storeBlockDay, tmpMaxTime } = localData;
-    const { active, maxTime } = syncData;
+    const { currentDay } = await chrome.storage.local.get("currentDay");
 
     if (currentDay === undefined) {
       log("[Setup] First run detected. Initializing currentDay.");
@@ -497,6 +486,20 @@ async function checkDay() {
       log("[CheckDay] Day is not over, skipping...");
       return;
     }
+
+    // avoid many calls by checking only day stored first
+    const [localData, syncData] = await Promise.all([
+      chrome.storage.local.get([
+        "globalWebsiteTime",
+        "totalWebsiteTime",
+        "storeGlobalDay",
+        "storeBlockDay",
+        "tmpMaxTime",
+      ]),
+      chrome.storage.sync.get(["active", "maxTime"]),
+    ]);
+    const { globalWebsiteTime, totalWebsiteTime, storeGlobalDay, storeBlockDay, tmpMaxTime } = localData;
+    const { active, maxTime } = syncData;
 
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const yesterdayName = days[currentDay]; // Use stored currentDay as the previous day
@@ -536,7 +539,8 @@ async function checkDay() {
     // reset times for the new day
     await resetTodayTimeData();
 
-    if (active && (tmpMaxTime === undefined || tmpMaxTime <= 0)) {
+    // If a session is active reset on day rollover
+    if (active) {
       updates.tmpMaxTime = maxTime;
       updates.showAction = false;
     }
