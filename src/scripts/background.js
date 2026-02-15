@@ -433,6 +433,7 @@ async function startUpEvent() {
     log("[Starting Up Extension]");
     await updateContentScript();
     await resetAfkChecks();
+    await chrome.storage.local.remove(["currentSite", "startTime"]);
     await calculateInsights();
     chrome.idle.setDetectionInterval(30);
     chrome.alarms.create("alarm", { periodInMinutes: 0.5 });
@@ -889,7 +890,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
     if (currentSite && startTime) {
       const now = Date.now();
       // If the tab closed was the one we were tracking, save the time
-      commitTime(now, startTime, currentSite);
+      await commitTime(now, startTime, currentSite);
       await chrome.storage.local.remove(["currentSite", "startTime"]);
       await returnIdleAfk();
     }
