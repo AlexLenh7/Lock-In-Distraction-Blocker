@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { checkBlock } from "../utils/Helpers";
-import { isValidSyntax } from "../utils/Helpers";
+import { checkBlock, isValidSyntax, formatTimer } from "../utils/Helpers";
 import { MdOutlineTimelapse } from "react-icons/md";
 import { TiWarningOutline } from "react-icons/ti";
 import { RiRestTimeLine } from "react-icons/ri";
@@ -99,12 +98,6 @@ export default function Settings() {
     const totalSeconds = time.hours * 3600 + time.minutes * 60;
     setShowTimer(totalSeconds);
     chrome.storage.local.set({ tmpMaxTime: totalSeconds, showAction: false });
-  };
-
-  const formatTimer = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h.toString()} hour : ${m.toString()} min`;
   };
 
   // Helper func visual time update

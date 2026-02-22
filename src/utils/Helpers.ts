@@ -94,3 +94,9 @@ export function sumObjectValues(obj: object) {
   if (!obj || typeof obj !== "object") return 0;
   return Object.values(obj).reduce((sum, time) => sum + time, 0);
 }
+
+export function formatTimer(seconds: number) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h.toString()} hour : ${m.toString()} min`;
+}

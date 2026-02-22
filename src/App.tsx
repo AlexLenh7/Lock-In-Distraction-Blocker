@@ -302,7 +302,7 @@ function App() {
           {/* <p className="col-span-2 flex justify-center text-sub-text">Extension Toggle</p> */}
         </div>
       </div>
-      <nav className="w-full h-fit my-3.5">
+      <nav className="w-full h-fit my-3">
         <ul className="grid grid-cols-3 items-start w-full border-2 border-primary animate-fade-in">
           {navItems.map((item) => (
             <li
@@ -332,7 +332,7 @@ function App() {
                 "--delay": "50ms",
               } as React.CSSProperties
             }
-            className="cursor-pointer hover:bg-primary-dark hover:border-primary transition-all duration-300 animate-fade-up animate-stagger grid col-span-full text-text w-full border-2 border-primary-dark overflow-hidden p-1"
+            className="cursor-pointer hover:bg-primary-dark hover:border-primary transition-all duration-300 animate-fade-up animate-stagger grid col-span-full text-text w-full border-2 border-bg-light overflow-hidden p-1"
           >
             <span className="flex flex-row justify-center items-center">
               <IoMdColorPalette className="size-4 mr-1" /> Current Theme:{" "}
@@ -371,7 +371,7 @@ function App() {
               href="https://alexlenh7.github.io/Lock-In/"
               target="_blank"
               style={{ "--delay": `50ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger flex flex-1 border-2 p-1 cursor-pointer transition-all duration-300 border-primary-dark hover:border-primary hover:bg-primary-dark justify-center items-center text-text"
+              className="animate-fade-up animate-stagger flex flex-1 border-2 p-1 cursor-pointer transition-all duration-300 border-bg-light hover:border-primary hover:bg-primary-dark justify-center items-center text-text"
             >
               <MdHelp className="size-4 mr-1" /> Help
             </a>
@@ -379,7 +379,7 @@ function App() {
               href="https://ko-fi.com/alexprograms"
               target="_blank"
               style={{ "--delay": `100ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger flex flex-1 border-2 p-1 cursor-pointer transition-all duration-300 border-primary-dark hover:border-primary hover:bg-primary-dark justify-center items-center text-text"
+              className="animate-fade-up animate-stagger flex flex-1 border-2 p-1 cursor-pointer transition-all duration-300 border-bg-light hover:border-primary hover:bg-primary-dark justify-center items-center text-text"
             >
               <SiKofi className="size-4 mr-1" /> Donate
             </a>

@@ -244,7 +244,7 @@ export default function Insights() {
         {/* Focus Score Card */}
         <div
           style={{ "--delay": `50ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light bg-bg-dark transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <TbFocus2 className="size-4 text-secondary" />
@@ -285,7 +285,7 @@ export default function Insights() {
         {/* Blocked Stats Card */}
         <div
           style={{ "--delay": `100ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light bg-bg-dark transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <ImEyeBlocked className="size-4 text-secondary" />
@@ -321,7 +321,7 @@ export default function Insights() {
         {/* Comparison Card */}
         <div
           style={{ "--delay": `150ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light bg-bg-dark transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <MdToday className="size-4 text-secondary" />
@@ -383,7 +383,7 @@ export default function Insights() {
         {/* Records Card */}
         <div
           style={{ "--delay": `200ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light transition-all duration-300 p-2"
+          className="animate-fade-up animate-stagger flex flex-col border-2 border-bg-light bg-bg-dark transition-all duration-300 p-2"
         >
           <div className="flex items-center gap-1 mb-1">
             <ImTrophy className="size-4 text-secondary" />

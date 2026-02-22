@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { PieChart } from "react-minimal-pie-chart";
 import Insights from "./Insights";
-import { formatTotalTime } from "../utils/Helpers";
+import { formatTotalTime, formatTimer } from "../utils/Helpers";
 import { PiMagnifyingGlassBold } from "react-icons/pi";
 import { IoArrowBack } from "react-icons/io5";
 import { type InsightsData } from "./Insights";
 import { BsFire } from "react-icons/bs";
 import { TbFocus2 } from "react-icons/tb";
+import { MdOutlineTimelapse } from "react-icons/md";
 
 // storage types
 interface WebsiteData {
@@ -38,6 +39,7 @@ export default function Dashboard() {
   const [showInsights, setShowInsights] = useState<boolean>(false);
   const [scoreStreak, setScoreStreak] = useState<InsightsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currSession, setCurrSession] = useState<number>(0);
 
   const Days = [
     { id: 1, short: "Sun", name: "Sunday" },
@@ -112,6 +114,8 @@ export default function Dashboard() {
 
         setGlobalTimes(convertStats(globalData));
         setWebsiteTimes(convertStats(blockData));
+        const timeData = await chrome.storage.local.get(["tmpMaxTime"]);
+        setCurrSession(timeData.tmpMaxTime as number);
       } catch (error) {
         console.log(error);
       }
@@ -165,10 +169,10 @@ export default function Dashboard() {
             <button
               onClick={() => setActive("global")}
               style={{ "--delay": `50ms` } as React.CSSProperties}
-              className={`animate-fade-up animate-stagger col-1 p-1 flex justify-center cursor-pointer border-2 transition-all duration-300 ${
+              className={`animate-fade-up animate-stagger col-1 p-1 flex justify-center cursor-pointer transition-colors duration-300 ${
                 active === "global"
-                  ? "border-primary bg-primary-dark text-text"
-                  : "bg-transparent hover:bg-primary-dark text-sub-text border-transparent"
+                  ? "border-primary bg-transparent text-text border-t-2 border-l-2 border-r-2 border-b-0"
+                  : "bg-transparent hover:bg-primary-dark text-sub-text border-primary border-b-2"
               }`}
             >
               All Websites
@@ -176,10 +180,10 @@ export default function Dashboard() {
             <button
               onClick={() => setActive("block")}
               style={{ "--delay": `100ms` } as React.CSSProperties}
-              className={`animate-fade-up animate-stagger col-2 p-1 flex justify-center cursor-pointer transition-all duration-300 border-2 ${
+              className={`animate-fade-up animate-stagger col-2 p-1 flex justify-center cursor-pointer transition-colors duration-300 ${
                 active === "block"
-                  ? "border-primary bg-primary-dark text-text"
-                  : "bg-transparent hover:bg-primary-dark text-sub-text border-transparent"
+                  ? "border-primary bg-transparent text-text border-t-2 border-l-2 border-r-2 border-b-0"
+                  : "bg-transparent hover:bg-primary-dark text-sub-text border-primary border-b-2"
               }`}
             >
               Blocked Websites
@@ -187,11 +191,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Day Picker */}
-        <ul className="relative w-full h-full flex-row grid grid-cols-7 mt-2 border-2 border-transparent p-0 list-none">
+        <ul className="relative w-full flex-row grid grid-cols-7 mt-2 border-2 border-transparent p-0 list-none">
           {/* <div className="absolute bottom-0 w-full h-0.5 bg-bg-light rounded-full" /> */}
           <div
-            className="absolute bottom-0 left-0 h-0.5 bg-primary shadow-[0_0_15px_currentColor] text-primary transition-all duration-300 ease-in-out z-0"
+            className="absolute bottom-0 left-0 h-0.5 bg-primary text-primary transition-all duration-300 ease-in-out z-0"
             style={{
               width: "14.28%", // 100% divided by 7 days
               transform: `translateX(${Days.findIndex((d) => d.name === currDay) * 100}%)`,
@@ -201,7 +204,7 @@ export default function Dashboard() {
             <li
               key={day.id}
               style={{ "--delay": `${day.id * 50}ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger flex w-full items-center justify-center z-10"
+              className="animate-fade-up animate-stagger flex items-center justify-center z-10"
             >
               <button
                 onClick={() => setDay(day.name)}
@@ -270,53 +273,77 @@ export default function Dashboard() {
             </ul>
           </div>
         </div>
+      </div>
+      {/* Day Picker */}
 
-        {/* Insights and stats */}
-        <div className="grid grid-cols-2 flex-row mt-2">
-          <div className="flex text-text col-1 justify-center items-center flex-col">
-            <div
-              style={{ "--delay": `50ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger flex flex-row whitespace-nowrap"
-            >
-              <TbFocus2 className="size-4 mr-1 text-secondary" />
-              <div className="ml-1 text-secondary font-bold">{focusScore}/100</div>
+      {/* Insights and stats */}
+      <div className="flex items-center h-full mt-2">
+        <div className="bg-bg-dark border-2 w-full border-bg-light p-1 animate-fade-in">
+          <div className="grid grid-cols-3 flex-row gap-2">
+            <div className="flex text-text items-center flex-col col-1">
+              <div
+                style={{ "--delay": `50ms` } as React.CSSProperties}
+                className="animate-fade-up animate-stagger flex flex-row"
+              >
+                <TbFocus2 className="size-4 mr-1 text-secondary" />
+                <div className="text-secondary font-bold">{focusScore}/100</div>
+              </div>
+              <div
+                style={{ "--delay": `100ms` } as React.CSSProperties}
+                className="z-999 animate-fade-up animate-stagger text-sub-text group relative"
+              >
+                Score
+                {/* <div className="absolute left-1/2 leading-tight -translate-x-1/2 -translate-y-3.5 top-full p-1 text-xs w-25 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
+                    Stay off blocked websites to increase score!
+                  </div> */}
+              </div>
             </div>
-            <div
-              style={{ "--delay": `100ms` } as React.CSSProperties}
-              className="z-999 animate-fade-up animate-stagger text-sub-text group relative cursor-help"
-            >
-              Lock In Score
-              <div className="absolute left-1/2 leading-tight -translate-x-1/2 -translate-y-3.5 top-full p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
-                Higher is better. Stay off blocked websites to increase score!
+            <div className="col-2 flex justify-center items-center">
+              <div className="flex flex-col">
+                <div
+                  style={{ "--delay": `50ms` } as React.CSSProperties}
+                  className="animate-fade-up animate-stagger text-secondary font-bold flex flex-row items-center"
+                >
+                  <MdOutlineTimelapse className="size-4 mr-1" />
+                  {formatTimer(currSession)}
+                </div>
+                <div
+                  style={{ "--delay": `100ms` } as React.CSSProperties}
+                  className="animate-fade-up animate-stagger text-sub-text flex justify-center"
+                >
+                  Time remaining
+                </div>
+              </div>
+            </div>
+            <div className="flex text-text items-center flex-col col-3">
+              <div
+                style={{ "--delay": `50ms` } as React.CSSProperties}
+                className="animate-fade-up animate-stagger flex flex-row whitespace-nowrap"
+              >
+                <BsFire className="size-4 mr-1 text-secondary" />
+                <div className="text-secondary font-bold">{streak}</div>
+              </div>
+              <div
+                style={{ "--delay": `100ms` } as React.CSSProperties}
+                className="animate-fade-up animate-stagger z-999 text-sub-text group relative"
+              >
+                Streak
+                {/* <div className="absolute left-1/2 leading-tight -translate-x-1/2 -translate-y-3.5 top-full p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
+                    Keep your score above 80 to maintain your streak!
+                  </div> */}
               </div>
             </div>
           </div>
-          <div className="flex text-text col-2 justify-center items-center flex-col">
-            <div
-              style={{ "--delay": `50ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger flex flex-row whitespace-nowrap"
-            >
-              <BsFire className="size-4 mr-1 text-secondary" />
-              <div className="ml-1 text-secondary font-bold">{streak}</div>
-            </div>
-            <div
+          <div className="flex justify-center">
+            <button
               style={{ "--delay": `100ms` } as React.CSSProperties}
-              className="animate-fade-up animate-stagger z-999 text-sub-text group relative cursor-help"
+              className="animate-fade-up animate-stagger text-text tracking-wide flex w-fit h-fit justify-center items-center cursor-pointer p-1 transition-all duration-300 hover:text-secondary"
+              onClick={() => setShowInsights(true)}
             >
-              Daily Streak
-              <div className="absolute left-1/2 leading-tight -translate-x-1/2 -translate-y-3.5 top-full p-1 text-xs w-35 text-text bg-bg-light rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-pre-line pointer-events-none">
-                Keep your score above 80 to maintain your streak!
-              </div>
-            </div>
+              <PiMagnifyingGlassBold className="size-4 mr-1" /> Learn more about your habits
+            </button>
           </div>
         </div>
-        <button
-          style={{ "--delay": `100ms` } as React.CSSProperties}
-          className="animate-fade-up animate-stagger text-text tracking-wide flex w-full justify-center items-center cursor-pointer mt-2 p-1 transition-all duration-300 hover:bg-primary-dark border-2 border-primary-dark hover:border-primary"
-          onClick={() => setShowInsights(true)}
-        >
-          <PiMagnifyingGlassBold className="text-secondary size-4 mr-1" /> Learn more about your habits
-        </button>
       </div>
     </div>
   );
