@@ -16,7 +16,7 @@
 
 Lock In is a powerful and easy to use Chrome extension designed to help you stay focused by tracking and limiting time spent on problematic websites. Monitor your productivity, set daily limits, and build better browsing habits.
 
----
+Download here:
 
 ## 🚀 Quick Start
 
