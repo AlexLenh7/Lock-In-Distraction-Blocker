@@ -1,6 +1,6 @@
 # Lock In - Distraction Manager
 
-<a href="https://alexlenh7.github.io/Lock-In-Distraction-Blocker/" target="_blank">
+<a href="https://alexlenh7.github.io/Lock-In/" target="_blank">
     <img src="./src/assets/LockInThumbnail.jpg" alt="Lock In Thumbnail" href="https://alexlenh7.github.io/Lock-In-Distraction-Blocker/" width="100%" />
 </a>
 <div align="center"> 
@@ -16,7 +16,11 @@
 
 Lock In is a powerful and easy to use Chrome extension designed to help you stay focused by tracking and limiting time spent on problematic websites. Monitor your productivity, set daily limits, and build better browsing habits.
 
-Download here:
+# 🔗 Links
+
+- Github: https://github.com/AlexLenh7/Lock-In
+- Support: https://alexlenh7.github.io/Lock-In/
+- Chrome Store: https://chromewebstore.google.com/detail/lock-in-distraction-manag/hlfbhpngmgppfjlihnilhciahicehglp?authuser=2&hl=en
 
 ## 🚀 Quick Start
 
