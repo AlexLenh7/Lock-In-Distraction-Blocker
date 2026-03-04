@@ -578,6 +578,8 @@ async function handleNuke(action, nuke, isBlocked, showAction) {
   if (isBlocked && showAction) {
     const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (activeTab?.id) {
+      await chrome.storage.local.remove(["currentSite", "startTime"]);
+      await chrome.storage.local.set({ showAction: false });
       chrome.tabs.remove(activeTab.id);
       log("[handleNuke]: Tab removed");
     }
